@@ -7,3 +7,6 @@
 [submodule "external/jerryscript"]
 	path = external/jerryscript
 	url = https://github.com/jerryscript-project/jerryscript.git
+[submodule "external/uthash"]
+	path = external/uthash
+	url = https://github.com/troydhanson/uthash.git
