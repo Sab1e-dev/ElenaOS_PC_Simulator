@@ -1,0 +1,112 @@
+﻿
+/**
+ * @file appsys_core.c
+ * @brief 应用程序系统核心功能实现
+ * @author Sab1e
+ * @date 2025-07-26
+ */
+
+#include "appsys_core.h"
+#include "jerryscript.h"
+#include "stdio.h"
+#include "appsys_native_func.h"
+#include "lvgl_binding.h"
+
+
+// 全局状态记录是否已初始化 VM
+static bool js_vm_initialized = false;
+
+/**
+ * @brief appsys_clear_current_app 清除当前运行的 JS 应用
+ */
+static void appsys_clear_current_app() {
+    if (js_vm_initialized) {
+        jerry_cleanup();
+        js_vm_initialized = false;
+    }
+}
+/**
+ * @brief appsys_create_app_info 把 ApplicationPackage_t 转换成 JS 对象（供 JS 访问 app_info）
+ * @param ApplicationPackage_t 结构体
+ * @return jerry_value_t 返回值说明
+ */
+jerry_value_t appsys_create_app_info(const ApplicationPackage_t* app) {
+    jerry_value_t obj = jerry_object();
+
+    jerry_value_t key, val;
+
+#define SET_PROP(field) \
+        key = jerry_string_sz((const jerry_char_t*)#field); \
+        val = jerry_string_sz((const jerry_char_t*)app->field); \
+        jerry_object_set(obj, key, val); \
+        jerry_value_free(key); \
+        jerry_value_free(val);
+
+    SET_PROP(app_id);
+    SET_PROP(name);
+    SET_PROP(version);
+    SET_PROP(author);
+    SET_PROP(description);
+
+    return obj;
+}
+
+
+/**
+ * @brief appsys_run_app 运行指定应用，如果当前已有应用在运行则自动清除
+ * @param ApplicationPackage_t 应用包结构体
+ * @return AppRunResult_t 返回运行结果枚举
+ */
+AppRunResult_t appsys_run_app(const ApplicationPackage_t* app) {
+    if (app == NULL || app->mainjs_str == NULL) {
+        return APP_ERR_NULL_PACKAGE;
+    }
+    // 清除前一个 JS 应用
+    appsys_clear_current_app();
+
+    // 初始化 JerryScript VM
+    jerry_init(JERRY_INIT_EMPTY);
+    js_vm_initialized = true;
+
+    // 注册原生函数
+    appsys_register_natives();
+
+    // 初始化 LVGL 绑定
+    lv_binding_init();
+
+    // 设置全局 app_info 变量
+    jerry_value_t global = jerry_current_realm();
+    jerry_value_t app_info = appsys_create_app_info(app);
+
+    jerry_value_t key = jerry_string_sz((const jerry_char_t*)"app_info");
+    jerry_object_set(global, key, app_info);
+
+    jerry_value_free(key);
+    jerry_value_free(app_info);
+    jerry_value_free(global);
+
+    // 执行主 JS 脚本
+    jerry_value_t result = jerry_eval(
+        (const jerry_char_t*)app->mainjs_str,
+        strlen(app->mainjs_str),
+        JERRY_PARSE_NO_OPTS
+    );
+
+    // 检查是否执行成功
+    if (jerry_value_is_error(result)) {
+        jerry_value_t err_str = jerry_value_to_string(result);
+        jerry_size_t len = jerry_array_length(err_str);
+        char* msg = malloc(len + 1);
+        jerry_string_to_buffer(err_str, JERRY_ENCODING_UTF8,(jerry_char_t*)msg, len);
+        msg[len] = '\0';
+        printf("[JS ERROR]: %s\n", msg);
+        free(msg);
+        jerry_value_free(err_str);
+        jerry_value_free(result);
+        return APP_ERR_JERRY_EXCEPTION;
+    }
+
+    jerry_value_free(result);
+    return APP_SUCCESS;
+}
+

@@ -1769,6 +1769,37 @@
       <Filter>lvgl\src\widgets\win</Filter>
     </ClInclude>
     <ClInclude Include="lv_conf.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="..\appsys\inc\appsys_core.h">
+      <Filter>appsys\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\appsys\inc\appsys_port.h">
+      <Filter>appsys\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\appsys\inc\appsys_native_func.h">
+      <Filter>appsys\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\uthash\src\utarray.h">
+      <Filter>uthash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\uthash\src\uthash.h">
+      <Filter>uthash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\uthash\src\utlist.h">
+      <Filter>uthash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\uthash\src\utringbuffer.h">
+      <Filter>uthash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\uthash\src\utstack.h">
+      <Filter>uthash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\uthash\src\utstring.h">
+      <Filter>uthash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\appsys\inc\lvgl_binding.h">
+      <Filter>appsys\inc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="LvglWindowsSimulator.manifest" />
@@ -4013,6 +4044,39 @@
       <Filter>lvgl\src\widgets\win</Filter>
     </ClCompile>
     <ClCompile Include="LvglWindowsSimulator.cpp" />
+    <ClCompile Include="..\jerryscript\jerry-port\common\jerry-port-context.c">
+      <Filter>jerryscript\jerry-port\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\jerryscript\jerry-port\common\jerry-port-fs.c">
+      <Filter>jerryscript\jerry-port\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\jerryscript\jerry-port\common\jerry-port-io.c">
+      <Filter>jerryscript\jerry-port\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\jerryscript\jerry-port\common\jerry-port-process.c">
+      <Filter>jerryscript\jerry-port\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\jerryscript\jerry-port\win\jerry-port-win-date.c">
+      <Filter>jerryscript\jerry-port\win</Filter>
+    </ClCompile>
+    <ClCompile Include="..\jerryscript\jerry-port\win\jerry-port-win-fs.c">
+      <Filter>jerryscript\jerry-port\win</Filter>
+    </ClCompile>
+    <ClCompile Include="..\jerryscript\jerry-port\win\jerry-port-win-process.c">
+      <Filter>jerryscript\jerry-port\win</Filter>
+    </ClCompile>
+    <ClCompile Include="..\appsys\src\appsys_core.c">
+      <Filter>appsys\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\appsys\src\appsys_port.c">
+      <Filter>appsys\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\appsys\src\appsys_native_func.c">
+      <Filter>appsys\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\appsys\src\lvgl_binding.c">
+      <Filter>appsys\src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="freetype">
@@ -5364,6 +5428,30 @@
     </Filter>
     <Filter Include="lvgl\zephyr">
       <UniqueIdentifier>{e2b5f460-68ee-4ae1-b143-7367524c0b28}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="jerryscript">
+      <UniqueIdentifier>{39cf1d8a-ecc9-4986-a3e5-9c7ecba702c6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="jerryscript\jerry-port">
+      <UniqueIdentifier>{7bd965aa-9752-4a07-ba88-398d5575a702}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="jerryscript\jerry-port\common">
+      <UniqueIdentifier>{107bf005-d6dd-4258-9519-d2d7ddca067a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="jerryscript\jerry-port\win">
+      <UniqueIdentifier>{06169d8e-80cf-4fc5-8871-5bff34b90d58}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="appsys">
+      <UniqueIdentifier>{3bb0c7b1-f54d-4f8f-8cc8-98f217d6c58d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="appsys\src">
+      <UniqueIdentifier>{710bc130-cba3-463c-8556-6a7f0cb627c4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="appsys\inc">
+      <UniqueIdentifier>{fa269129-da1f-4ab5-a936-dbc4018e7c97}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="uthash">
+      <UniqueIdentifier>{bdee2d13-895f-48a0-bdf9-9f529756699f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -14853,5 +14941,21 @@
     <None Include="$(MSBuildThisFileDirectory)..\LvglPlatform\lvgl\zephyr\module.yml">
       <Filter>lvgl\zephyr</Filter>
     </None>
+    <None Include="freetype.props" />
+    <None Include="main.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="LvglWindowsSimulator.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\jerryscript\build\lib\Debug\jerry-core.lib">
+      <Filter>jerryscript</Filter>
+    </Library>
+    <Library Include="..\jerryscript\build\lib\Debug\jerry-ext.lib">
+      <Filter>jerryscript</Filter>
+    </Library>
+    <Library Include="..\jerryscript\build\lib\Debug\jerry-port.lib">
+      <Filter>jerryscript</Filter>
+    </Library>
   </ItemGroup>
 </Project>

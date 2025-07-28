@@ -33,10 +33,18 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <TreatWarningAsError>false</TreatWarningAsError>
-      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <PreprocessorDefinitions>LV_CONF_INCLUDE_SIMPLE;LV_LVGL_H_INCLUDE_SIMPLE;LV_USE_DEV_VERSION;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalOptions>/utf-8 /guard:ehcont
+ %(AdditionalOptions)</AdditionalOptions>
+      <PreprocessorDefinitions>LV_CONF_INCLUDE_SIMPLE;LV_LVGL_H_INCLUDE_SIMPLE;LV_USE_DEV_VERSION;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS
+;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Optimization Condition="'$(Configuration)'=='Release'">MinSpace</Optimization>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\WorkSpace\ElenaWatch\ElenaOS\Simulator\lv_port_pc_visual_studio\uthash\src;D:\WorkSpace\ElenaWatch\ElenaOS\Simulator\lv_port_pc_visual_studio\appsys\inc;D:\WorkSpace\ElenaWatch\ElenaOS\Simulator\lv_port_pc_visual_studio\jerryscript\jerry-ext\include\jerryscript-ext;D:\WorkSpace\ElenaWatch\ElenaOS\Simulator\lv_port_pc_visual_studio\jerryscript\jerry-core\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)..\LvglPlatform\lvgl\demos\benchmark\lv_demo_benchmark.h" />
@@ -628,7 +636,18 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)..\LvglPlatform\lvgl\src\widgets\tileview\lv_tileview_private.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)..\LvglPlatform\lvgl\src\widgets\win\lv_win.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)..\LvglPlatform\lvgl\src\widgets\win\lv_win_private.h" />
+    <ClInclude Include="..\appsys\inc\appsys_core.h" />
+    <ClInclude Include="..\appsys\inc\appsys_native_func.h" />
+    <ClInclude Include="..\appsys\inc\appsys_port.h" />
+    <ClInclude Include="..\appsys\inc\lvgl_binding.h" />
+    <ClInclude Include="..\uthash\src\utarray.h" />
+    <ClInclude Include="..\uthash\src\uthash.h" />
+    <ClInclude Include="..\uthash\src\utlist.h" />
+    <ClInclude Include="..\uthash\src\utringbuffer.h" />
+    <ClInclude Include="..\uthash\src\utstack.h" />
+    <ClInclude Include="..\uthash\src\utstring.h" />
     <ClInclude Include="lv_conf.h" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="LvglWindowsSimulator.manifest" />
@@ -3618,6 +3637,17 @@
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>Default</LanguageStandard>
     </ClCompile>
+    <ClCompile Include="..\appsys\src\appsys_core.c" />
+    <ClCompile Include="..\appsys\src\appsys_native_func.c" />
+    <ClCompile Include="..\appsys\src\appsys_port.c" />
+    <ClCompile Include="..\appsys\src\lvgl_binding.c" />
+    <ClCompile Include="..\jerryscript\jerry-port\common\jerry-port-context.c" />
+    <ClCompile Include="..\jerryscript\jerry-port\common\jerry-port-fs.c" />
+    <ClCompile Include="..\jerryscript\jerry-port\common\jerry-port-io.c" />
+    <ClCompile Include="..\jerryscript\jerry-port\common\jerry-port-process.c" />
+    <ClCompile Include="..\jerryscript\jerry-port\win\jerry-port-win-date.c" />
+    <ClCompile Include="..\jerryscript\jerry-port\win\jerry-port-win-fs.c" />
+    <ClCompile Include="..\jerryscript\jerry-port\win\jerry-port-win-process.c" />
     <ClCompile Include="LvglWindowsSimulator.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -6784,6 +6814,15 @@
     <None Include="$(MSBuildThisFileDirectory)..\LvglPlatform\lvgl\zephyr\Kconfig" />
     <None Include="$(MSBuildThisFileDirectory)..\LvglPlatform\lvgl\zephyr\module.yml" />
     <None Include="freetype.props" />
+    <None Include="main.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="LvglWindowsSimulator.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\jerryscript\build\lib\Debug\jerry-core.lib" />
+    <Library Include="..\jerryscript\build\lib\Debug\jerry-ext.lib" />
+    <Library Include="..\jerryscript\build\lib\Debug\jerry-port.lib" />
   </ItemGroup>
   <Import Sdk="Mile.Project.Configurations" Version="1.0.1622" Project="Mile.Project.Cpp.targets" />
 </Project>

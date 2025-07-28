@@ -6,6 +6,38 @@
 #include "lvgl/examples/lv_examples.h"
 #include "lvgl/demos/lv_demos.h"
 
+#include "jerryscript.h"
+#include "appsys_core.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <direct.h>
+
+char* load_js_file(const char* filename) {
+    FILE* file = fopen(filename, "rb");
+    if (!file) {
+        printf("Failed to open JS file: %s\n", filename);
+        return NULL;
+    }
+
+    fseek(file, 0, SEEK_END);
+    long len = ftell(file);
+    rewind(file);
+
+    char* buffer = (char*)malloc(len + 1);
+    if (!buffer) {
+        printf("Out of memory while reading JS\n");
+        fclose(file);
+        return NULL;
+    }
+
+    fread(buffer, 1, len, file);
+    buffer[len] = '\0'; // Null-terminate
+    fclose(file);
+
+    return buffer;
+}
+
 int main()
 {
     lv_init();
@@ -77,14 +109,65 @@ int main()
         return -1;
     }
 
-    lv_demo_widgets();
+    //lv_demo_widgets();
     //lv_demo_benchmark();
 
-    while (1)
-    {
-        uint32_t time_till_next = lv_timer_handler();
-        lv_delay_ms(time_till_next);
-    }
+    char cwd[256];
+    _getcwd(cwd, sizeof(cwd));
+    printf("Current working directory: %s\n", cwd);
+
+    char* script = load_js_file("main.js");
+    if (!script) return 0;
+
+    ApplicationPackage_t app = {
+        .app_id = "com.mydev.clock",
+        .name = "时钟",
+        .version = "1.0.2",
+        .author = "Sab1e",
+        .description = "一个简单的时钟应用",
+        .mainjs_str = (char*)script };
+
+    appsys_run_app(&app);
+
+    //while (1)
+    //{
+    //    uint32_t time_till_next = lv_timer_handler();
+    //    lv_delay_ms(time_till_next);
+    //}
 
     return 0;
 }
+
+//#include <stdio.h>
+//#include "jerryscript.h"
+//#include "jerryscript-port.h"
+//#include <stdlib.h>
+//#include "appsys_core.h"
+//
+//int main(void) {
+//    const jerry_char_t script[] = "print('Hello from JerryScript!', 123, true);";
+//
+//    ApplicationPackage_t app = {
+//        .app_id = "com.mydev.clock",
+//        .name = "时钟",
+//        .version = "1.0.2",
+//        .author = "Sab1e",
+//        .description = "一个简单的时钟应用",
+//        .mainjs_str = (const char*)script};
+//       
+//    appsys_run_app(&app);
+//
+//    const jerry_char_t newsc[] = "while(true){print('Hello from JerryScript!', 123, true,app_info.app_id+app_info.app_id);delay(100);}";
+//
+//    app = {
+//        .app_id = "com.mydev.clock",
+//        .name = "时钟",
+//        .version = "1.0.2",
+//        .author = "Sab1e",
+//        .description = "一个简单的时钟应用",
+//        .mainjs_str = (const char*)newsc };
+//
+//    appsys_run_app(&app);
+//
+//    return 0;
+//}
