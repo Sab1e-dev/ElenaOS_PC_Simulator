@@ -12,6 +12,7 @@
 #include <string.h>
 #include <windows.h>
 #include "lvgl/lvgl.h"
+#include "appsys_core.h"
 /********************************** 原生函数定义 **********************************/
 /**
  * @brief 处理 JavaScript 的 print 调用，将所有参数转换为字符串并打印到标准输出。每个参数之间以空格分隔，末尾换行。适用于 JerryScript 引擎的原生函数绑定。
@@ -132,18 +133,11 @@ static jerry_value_t js_lv_timer_handler(const jerry_call_info_t* info,
     return jerry_undefined(); // 无返回值
 }
 /********************************** 注册原生函数 **********************************/
-/**
- * @brief 原生函数入口链接结构体
- */
-typedef struct {
-    const char* name;
-    jerry_external_handler_t handler;
-} NativeFuncEntry;
 
 /**
  * @brief 原生函数列表
  */
-const NativeFuncEntry appsys_native_funcs[] = {
+const AppSysFuncEntry appsys_native_funcs[] = {
     {
         .name = "print",
         .handler = js_print_handler

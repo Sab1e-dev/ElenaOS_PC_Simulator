@@ -7,7 +7,6 @@
  */
 
 #include "appsys_core.h"
-#include "jerryscript.h"
 #include "stdio.h"
 #include "appsys_native_func.h"
 #include "lvgl_binding.h"

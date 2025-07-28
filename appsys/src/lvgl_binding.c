@@ -10,7 +10,7 @@
 #include "jerryscript.h"
 #include "uthash.h"
 #include "lvgl/lvgl.h"
-
+#include "appsys_core.h"
  /********************************** 回调系统 **********************************/
 #define MAX_CALLBACKS_PER_KEY 8
 
@@ -167,18 +167,12 @@ static void lv_obj_deleted_cb(lv_event_t* e) {
 }
 
 /********************************** 注册 LVGL 函数及回调 **********************************/
-/**
- * @brief 函数入口链接结构体
- */
-typedef struct {
-    const char* name;
-    jerry_external_handler_t handler;
-} NativeFuncEntry;
+
 
 /**
  * @brief 函数列表
  */
-const NativeFuncEntry appsys_native_funcs[] = {
+const AppSysFuncEntry lvgl_binding_funcs [] = {
     {
         .name = "register_lv_event_handler",
         .handler = register_lv_event_handler
@@ -192,11 +186,11 @@ const NativeFuncEntry appsys_native_funcs[] = {
 /**
  * @brief 将函数注册到 JerryScript 全局对象中
  */
-void appsys_register_natives() {
+void lvgl_binding_register_functions() {
     jerry_value_t global = jerry_current_realm();
-    for (size_t i = 0; i < sizeof(appsys_native_funcs) / sizeof(appsys_native_funcs[0]); ++i) {
-        jerry_value_t fn = jerry_function_external(appsys_native_funcs[i].handler);
-        jerry_value_t name = jerry_string_sz(appsys_native_funcs[i].name);
+    for (size_t i = 0; i < sizeof(lvgl_binding_funcs) / sizeof(lvgl_binding_funcs[0]); ++i) {
+        jerry_value_t fn = jerry_function_external(lvgl_binding_funcs[i].handler);
+        jerry_value_t name = jerry_string_sz(lvgl_binding_funcs[i].name);
         jerry_object_set(global, name, fn);
         jerry_value_free(name);
         jerry_value_free(fn);
@@ -209,5 +203,5 @@ void appsys_register_natives() {
  */
 void lv_binding_init() {
     lv_obj_add_event_cb(lv_scr_act(), lv_obj_deleted_cb, LV_EVENT_DELETE, NULL);
-    appsys_register_natives();
+    lvgl_binding_register_functions();
 }

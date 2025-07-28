@@ -15,8 +15,15 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 #include "lvgl.h"
+#include "jerryscript.h"
 // 类型声明
-
+/**
+ * @brief 函数入口链接结构体
+ */
+typedef struct {
+    const char* name;
+    jerry_external_handler_t handler;
+} AppSysFuncEntry;
 // 应用包描述结构体
 typedef struct {
     const char* app_id;           // 应用唯一ID，例如 "com.mydev.clock"

@@ -1779,26 +1779,26 @@
     <ClInclude Include="..\appsys\inc\appsys_native_func.h">
       <Filter>appsys\inc</Filter>
     </ClInclude>
-    <ClInclude Include="..\uthash\src\utarray.h">
-      <Filter>uthash</Filter>
-    </ClInclude>
-    <ClInclude Include="..\uthash\src\uthash.h">
-      <Filter>uthash</Filter>
-    </ClInclude>
-    <ClInclude Include="..\uthash\src\utlist.h">
-      <Filter>uthash</Filter>
-    </ClInclude>
-    <ClInclude Include="..\uthash\src\utringbuffer.h">
-      <Filter>uthash</Filter>
-    </ClInclude>
-    <ClInclude Include="..\uthash\src\utstack.h">
-      <Filter>uthash</Filter>
-    </ClInclude>
-    <ClInclude Include="..\uthash\src\utstring.h">
-      <Filter>uthash</Filter>
-    </ClInclude>
     <ClInclude Include="..\appsys\inc\lvgl_binding.h">
       <Filter>appsys\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\uthash\src\utarray.h">
+      <Filter>uthash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\uthash\src\uthash.h">
+      <Filter>uthash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\uthash\src\utlist.h">
+      <Filter>uthash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\uthash\src\utringbuffer.h">
+      <Filter>uthash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\uthash\src\utstack.h">
+      <Filter>uthash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\uthash\src\utstring.h">
+      <Filter>uthash</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -4044,27 +4044,6 @@
       <Filter>lvgl\src\widgets\win</Filter>
     </ClCompile>
     <ClCompile Include="LvglWindowsSimulator.cpp" />
-    <ClCompile Include="..\jerryscript\jerry-port\common\jerry-port-context.c">
-      <Filter>jerryscript\jerry-port\common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\jerryscript\jerry-port\common\jerry-port-fs.c">
-      <Filter>jerryscript\jerry-port\common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\jerryscript\jerry-port\common\jerry-port-io.c">
-      <Filter>jerryscript\jerry-port\common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\jerryscript\jerry-port\common\jerry-port-process.c">
-      <Filter>jerryscript\jerry-port\common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\jerryscript\jerry-port\win\jerry-port-win-date.c">
-      <Filter>jerryscript\jerry-port\win</Filter>
-    </ClCompile>
-    <ClCompile Include="..\jerryscript\jerry-port\win\jerry-port-win-fs.c">
-      <Filter>jerryscript\jerry-port\win</Filter>
-    </ClCompile>
-    <ClCompile Include="..\jerryscript\jerry-port\win\jerry-port-win-process.c">
-      <Filter>jerryscript\jerry-port\win</Filter>
-    </ClCompile>
     <ClCompile Include="..\appsys\src\appsys_core.c">
       <Filter>appsys\src</Filter>
     </ClCompile>
@@ -4076,6 +4055,27 @@
     </ClCompile>
     <ClCompile Include="..\appsys\src\lvgl_binding.c">
       <Filter>appsys\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\jerryscript\jerry-port\common\jerry-port-context.c">
+      <Filter>jerryscript\jerry-port\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\jerryscript\jerry-port\common\jerry-port-fs.c">
+      <Filter>jerryscript\jerry-port\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\jerryscript\jerry-port\common\jerry-port-io.c">
+      <Filter>jerryscript\jerry-port\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\jerryscript\jerry-port\common\jerry-port-process.c">
+      <Filter>jerryscript\jerry-port\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\jerryscript\jerry-port\win\jerry-port-win-date.c">
+      <Filter>jerryscript\jerry-port\win</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\jerryscript\jerry-port\win\jerry-port-win-fs.c">
+      <Filter>jerryscript\jerry-port\win</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\jerryscript\jerry-port\win\jerry-port-win-process.c">
+      <Filter>jerryscript\jerry-port\win</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -5435,12 +5435,6 @@
     <Filter Include="jerryscript\jerry-port">
       <UniqueIdentifier>{7bd965aa-9752-4a07-ba88-398d5575a702}</UniqueIdentifier>
     </Filter>
-    <Filter Include="jerryscript\jerry-port\common">
-      <UniqueIdentifier>{107bf005-d6dd-4258-9519-d2d7ddca067a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="jerryscript\jerry-port\win">
-      <UniqueIdentifier>{06169d8e-80cf-4fc5-8871-5bff34b90d58}</UniqueIdentifier>
-    </Filter>
     <Filter Include="appsys">
       <UniqueIdentifier>{3bb0c7b1-f54d-4f8f-8cc8-98f217d6c58d}</UniqueIdentifier>
     </Filter>
@@ -5452,6 +5446,12 @@
     </Filter>
     <Filter Include="uthash">
       <UniqueIdentifier>{bdee2d13-895f-48a0-bdf9-9f529756699f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="jerryscript\jerry-port\common">
+      <UniqueIdentifier>{8f850198-da9f-4b17-b649-3c130c02b827}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="jerryscript\jerry-port\win">
+      <UniqueIdentifier>{1b48e264-f9dd-4090-b88c-d074bcbcdc7b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -14948,13 +14948,13 @@
     <ResourceCompile Include="LvglWindowsSimulator.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\jerryscript\build\lib\Debug\jerry-core.lib">
+    <Library Include="..\external\jerryscript\build\lib\Debug\jerry-core.lib">
       <Filter>jerryscript</Filter>
     </Library>
-    <Library Include="..\jerryscript\build\lib\Debug\jerry-ext.lib">
+    <Library Include="..\external\jerryscript\build\lib\Debug\jerry-ext.lib">
       <Filter>jerryscript</Filter>
     </Library>
-    <Library Include="..\jerryscript\build\lib\Debug\jerry-port.lib">
+    <Library Include="..\external\jerryscript\build\lib\Debug\jerry-port.lib">
       <Filter>jerryscript</Filter>
     </Library>
   </ItemGroup>
