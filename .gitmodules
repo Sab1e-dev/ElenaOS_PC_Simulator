@@ -4,3 +4,6 @@
 [submodule "LvglPlatform/freetype"]
 	path = LvglPlatform/freetype
 	url = https://github.com/freetype/freetype
+[submodule "external/jerryscript"]
+	path = external/jerryscript
+	url = https://github.com/jerryscript-project/jerryscript.git
