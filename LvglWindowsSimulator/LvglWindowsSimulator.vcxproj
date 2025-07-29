@@ -3640,7 +3640,7 @@
     <ClCompile Include="..\appsys\src\appsys_core.c" />
     <ClCompile Include="..\appsys\src\appsys_native_func.c" />
     <ClCompile Include="..\appsys\src\appsys_port.c" />
-    <ClCompile Include="..\appsys\src\lvgl_binding.c" />
+    <ClCompile Include="..\appsys\src\lv_bindings.c" />
     <ClCompile Include="..\external\jerryscript\jerry-port\common\jerry-port-context.c" />
     <ClCompile Include="..\external\jerryscript\jerry-port\common\jerry-port-fs.c" />
     <ClCompile Include="..\external\jerryscript\jerry-port\common\jerry-port-io.c" />

@@ -50,7 +50,6 @@ jerry_value_t appsys_create_app_info(const ApplicationPackage_t* app) {
     return obj;
 }
 
-
 /**
  * @brief appsys_run_app 运行指定应用，如果当前已有应用在运行则自动清除
  * @param ApplicationPackage_t 应用包结构体
@@ -92,20 +91,31 @@ AppRunResult_t appsys_run_app(const ApplicationPackage_t* app) {
     );
 
     // 检查是否执行成功
-    if (jerry_value_is_error(result)) {
-        jerry_value_t err_str = jerry_value_to_string(result);
-        jerry_size_t len = jerry_array_length(err_str);
-        char* msg = malloc(len + 1);
-        jerry_string_to_buffer(err_str, JERRY_ENCODING_UTF8,(jerry_char_t*)msg, len);
-        msg[len] = '\0';
-        printf("[JS ERROR]: %s\n", msg);
-        free(msg);
-        jerry_value_free(err_str);
+    if (jerry_value_is_exception(result)) {
+        printf("JS Error: ");
+        jerry_value_t value = jerry_exception_value(result, false);
+        jerry_char_t str_buf_p[256];
+
+        /* Determining required buffer size */
+        jerry_size_t req_sz = jerry_string_size(value, JERRY_ENCODING_CESU8);
+
+        if (req_sz <= 255)
+        {
+            jerry_string_to_buffer(value, JERRY_ENCODING_CESU8, str_buf_p, req_sz);
+            str_buf_p[req_sz] = '\0';
+            printf("%s", (const char*)str_buf_p);
+        }
+        else
+        {
+            printf("error: buffer isn't big enough");
+        }
+        jerry_value_free(value);
         jerry_value_free(result);
         return APP_ERR_JERRY_EXCEPTION;
     }
 
     jerry_value_free(result);
+    jerry_cleanup();
     return APP_SUCCESS;
 }
 

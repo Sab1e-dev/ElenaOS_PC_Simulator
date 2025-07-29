@@ -4053,9 +4053,6 @@
     <ClCompile Include="..\appsys\src\appsys_native_func.c">
       <Filter>appsys\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\appsys\src\lvgl_binding.c">
-      <Filter>appsys\src</Filter>
-    </ClCompile>
     <ClCompile Include="..\external\jerryscript\jerry-port\common\jerry-port-context.c">
       <Filter>jerryscript\jerry-port\common</Filter>
     </ClCompile>
@@ -4076,6 +4073,9 @@
     </ClCompile>
     <ClCompile Include="..\external\jerryscript\jerry-port\win\jerry-port-win-process.c">
       <Filter>jerryscript\jerry-port\win</Filter>
+    </ClCompile>
+    <ClCompile Include="..\appsys\src\lv_bindings.c">
+      <Filter>appsys\src</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

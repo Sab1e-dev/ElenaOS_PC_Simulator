@@ -127,8 +127,13 @@ int main()
         .description = "一个简单的时钟应用",
         .mainjs_str = (char*)script };
 
-    appsys_run_app(&app);
+    
 
+    while (1) {
+        appsys_run_app(&app);
+        scanf("App exited, restarting...\n");
+        Sleep(1000); // 等待 1 秒后重新运行应用
+    }
     //while (1)
     //{
     //    uint32_t time_till_next = lv_timer_handler();
