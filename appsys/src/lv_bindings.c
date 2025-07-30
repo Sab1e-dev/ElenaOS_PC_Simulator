@@ -1,16 +1,18 @@
 
 /**
- * @file lvgl_binding.c
+ * @file lv_bindings.c
  * @brief 将 LVGL 绑定到 JerryScript 的实现文件，此文件使用脚本自动生成。
  * @author Sab1e
- * @date 2025-07-29
+ * @date 2025-07-31
  */
-
-#include "lvgl_binding.h"
+// Application System header files
+#include "lv_bindings.h"
+#include "lv_bindings_special.h"
+#include "appsys_core.h"
+// Third party header files
 #include "jerryscript.h"
 #include "uthash.h"
 #include "lvgl/lvgl.h"
-#include "appsys_core.h"
 
 /********************************** 错误处理辅助函数 **********************************/
 static jerry_value_t throw_error(const char* message) {
@@ -168,11 +170,11 @@ static void lv_obj_deleted_cb(lv_event_t* e) {
     callback_map_t* cur, * tmp;
     HASH_ITER(hh, callback_table, cur, tmp) {
         if (cur->key.obj == obj) {
-            for (int i = 0; i < cur->callback_count; i++) {
-                jerry_value_free(cur->callbacks[i]);
-            }
-            HASH_DEL(callback_table, cur);
-            free(cur);
+        for (int i = 0; i < cur->callback_count; i++) {
+            jerry_value_free(cur->callbacks[i]);
+        }
+        HASH_DEL(callback_table, cur);
+        free(cur);
         }
     }
 }
@@ -213,227 +215,89 @@ static lv_color_t parse_lv_color(jerry_value_t js_color) {
     return color;
 }
 // 函数声明
-static jerry_value_t js_lv_event_get_target(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_event_get_code(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_event_get_user_data(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_obj_clean(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_obj_set_pos(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_obj_set_size(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_obj_align(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_obj_align_to(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_obj_center(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_obj_add_style(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_obj_set_style_pad_row(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_obj_set_style_pad_column(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_obj_set_style_bg_color(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_obj_set_style_border_color(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_obj_set_style_border_width(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_obj_set_style_text_color(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_obj_set_style_text_font(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_obj_set_style_radius(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_obj_set_style_pad_all(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_obj_create(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_obj_add_flag(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_arc_create(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_arc_set_bg_angles(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_arc_set_value(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_arc_set_range(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_label_create(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
 static jerry_value_t js_lv_label_set_text(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_label_set_long_mode(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_label_set_recolor(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_bar_create(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_bar_set_value(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_obj_add_flag(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_obj_set_pos(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
 static jerry_value_t js_lv_bar_set_range(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_chart_create(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_chart_set_type(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_chart_set_point_count(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
 static jerry_value_t js_lv_checkbox_create(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_checkbox_set_text(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_slider_create(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_obj_create(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_obj_set_state(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_chart_set_range(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_obj_set_style_radius(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_obj_clean(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_slider_set_range(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_textarea_set_text(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_event_get_target(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_msgbox_close(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_obj_set_style_pad_row(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_event_get_user_data(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_arc_set_range(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_obj_set_style_pad_all(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_obj_set_style_border_color(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_obj_set_style_bg_color(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_arc_set_value(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_label_create(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
 static jerry_value_t js_lv_dropdown_create(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_dropdown_set_options(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_dropdown_set_selected(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_obj_align_to(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_table_set_row_cnt(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_obj_del(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_checkbox_set_text(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_img_set_zoom(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_event_get_code(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_arc_set_bg_angles(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_table_set_cell_value(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_obj_set_size(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_arc_create(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_obj_set_style_text_color(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_label_set_long_mode(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_table_create(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_textarea_create(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_slider_set_value(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_bar_set_value(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_btn_create(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_label_set_recolor(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_obj_align(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_chart_create(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_roller_set_selected(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_textarea_set_placeholder_text(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_obj_add_style(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_timer_handler(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_textarea_add_text(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
 static jerry_value_t js_lv_dropdown_get_selected(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
 static jerry_value_t js_lv_msgbox_create(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_msgbox_close(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_obj_clear_flag(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
 static jerry_value_t js_lv_roller_create(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_roller_set_options(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_roller_set_selected(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_slider_create(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_slider_set_value(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_slider_set_range(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_obj_set_style_text_font(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_bar_create(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_dropdown_set_options(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
 static jerry_value_t js_lv_slider_get_value(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_textarea_create(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_textarea_add_text(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_textarea_set_text(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_textarea_set_placeholder_text(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_table_set_col_cnt(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_obj_set_style_border_width(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_roller_set_options(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
 static jerry_value_t js_lv_switch_create(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_table_create(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_table_set_cell_value(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_obj_set_width(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_scr_act(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_chart_set_type(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_obj_center(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_delay_ms(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_img_create(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_obj_set_style_pad_column(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_dropdown_set_selected(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_chart_set_point_count(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_img_set_angle(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_label_get_text(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
 
 // 函数实现
 
 /**
- * Get Widget originally targeted by the event. It's the same even if event was bubbled. the target of the event_code
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
+ * Set a new text for a label. Memory will be allocated to store the text by the label.
  */
-static jerry_value_t js_lv_event_get_target(const jerry_call_info_t* info,
+static jerry_value_t js_lv_label_set_text(const jerry_call_info_t* info,
     const jerry_value_t args[],
     const jerry_length_t argc) {
     // 参数数量检查
-    if (argc < 1) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: e (lv_event_t*)
-    jerry_value_t js_e = args[0];
-    if (!jerry_value_is_object(js_e)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t e_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t e_ptr_val = jerry_object_get(js_e, e_ptr_prop);
-    jerry_value_free(e_ptr_prop);
-    
-    if (!jerry_value_is_number(e_ptr_val)) {
-        jerry_value_free(e_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t e_ptr = (uintptr_t)jerry_value_as_number(e_ptr_val);
-    jerry_value_free(e_ptr_val);
-    void* e = (void*)e_ptr;
-    
-    // 调用底层函数
-    void* ret_value = lv_event_get_target(e);
-
-    // 处理返回值
-    // 包装为通用指针对象
-    jerry_value_t js_obj = jerry_object();
-    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
-    
-    jerry_object_set(js_obj, jerry_string_sz("__ptr"), ptr);
-    jerry_object_set(js_obj, jerry_string_sz("__type"), jerry_string_sz("void*"));
-    
-    jerry_value_free(ptr);
-    return js_obj;
-}
-
-
-
-/**
- * Get event code of an event. the event code. (E.g. LV_EVENT_CLICKED , LV_EVENT_FOCUSED , etc)
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_event_get_code(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 1) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: e (lv_event_t*)
-    jerry_value_t js_e = args[0];
-    if (!jerry_value_is_object(js_e)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t e_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t e_ptr_val = jerry_object_get(js_e, e_ptr_prop);
-    jerry_value_free(e_ptr_prop);
-    
-    if (!jerry_value_is_number(e_ptr_val)) {
-        jerry_value_free(e_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t e_ptr = (uintptr_t)jerry_value_as_number(e_ptr_val);
-    jerry_value_free(e_ptr_val);
-    void* e = (void*)e_ptr;
-    
-    // 调用底层函数
-    lv_event_code_t ret_value = lv_event_get_code(e);
-
-    // 处理返回值
-    return jerry_number(ret_value);
-}
-
-
-
-/**
- * Get user_data passed when event was registered on Widget. pointer to the user_data
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_event_get_user_data(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 1) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: e (lv_event_t*)
-    jerry_value_t js_e = args[0];
-    if (!jerry_value_is_object(js_e)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t e_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t e_ptr_val = jerry_object_get(js_e, e_ptr_prop);
-    jerry_value_free(e_ptr_prop);
-    
-    if (!jerry_value_is_number(e_ptr_val)) {
-        jerry_value_free(e_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t e_ptr = (uintptr_t)jerry_value_as_number(e_ptr_val);
-    jerry_value_free(e_ptr_val);
-    void* e = (void*)e_ptr;
-    
-    // 调用底层函数
-    void* ret_value = lv_event_get_user_data(e);
-
-    // 处理返回值
-    // 包装为通用指针对象
-    jerry_value_t js_obj = jerry_object();
-    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
-    
-    jerry_object_set(js_obj, jerry_string_sz("__ptr"), ptr);
-    jerry_object_set(js_obj, jerry_string_sz("__type"), jerry_string_sz("void*"));
-    
-    jerry_value_free(ptr);
-    return js_obj;
-}
-
-
-
-/**
- * Delete all children of an object. Also remove the objects from their group and remove all animations (if any). Send LV_EVENT_DELETED to deleted objects.
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_obj_clean(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 1) {
+    if (argc < 2) {
         return throw_error("Insufficient arguments");
     }
 
@@ -456,8 +320,68 @@ static jerry_value_t js_lv_obj_clean(const jerry_call_info_t* info,
     jerry_value_free(obj_ptr_val);
     void* obj = (void*)obj_ptr;
     
+    // 解析参数: text (const char*)
+    jerry_value_t js_text = args[1];
+    if (!jerry_value_is_string(js_text)) {
+        return throw_error("Argument 1 must be a string");
+    }
+    
+    jerry_size_t text_len = jerry_string_size(js_text, JERRY_ENCODING_UTF8);
+    char* text = (char*)malloc(text_len + 1);
+    if (!text) {
+        return throw_error("Out of memory");
+    }
+    jerry_string_to_buffer(js_text, JERRY_ENCODING_UTF8, (jerry_char_t*)text, text_len);
+    text[text_len] = '\0';
+
     // 调用底层函数
-    lv_obj_clean(obj);
+    lv_label_set_text(obj, text);
+    free(text);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Set one or more flags
+ */
+static jerry_value_t js_lv_obj_add_flag(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: f (lv_obj_flag_t)
+    jerry_value_t js_f = args[1];
+    if (!jerry_value_is_number(js_f)) {
+        return throw_error("Argument 1 must be a number");
+    }
+    
+    int f = (int)jerry_value_as_number(js_f);
+    
+    // 调用底层函数
+    lv_obj_add_flag(obj, f);
     return jerry_undefined();
 }
 
@@ -465,11 +389,6 @@ static jerry_value_t js_lv_obj_clean(const jerry_call_info_t* info,
 
 /**
  * Set the position of an object relative to the set alignment. With default alignment it's the distance from the top left corner  E.g. LV_ALIGN_CENTER alignment it's the offset from the center of the parent  The position is interpreted on the content area of the parent  The values can be set in pixel or in percentage of parent size with lv_pct(v)
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
  */
 static jerry_value_t js_lv_obj_set_pos(const jerry_call_info_t* info,
     const jerry_value_t args[],
@@ -522,14 +441,9 @@ static jerry_value_t js_lv_obj_set_pos(const jerry_call_info_t* info,
 
 
 /**
- * Set the size of an object. possible values are: pixel simple set the size accordingly LV_SIZE_CONTENT set the size to involve all children in the given direction lv_pct(x) to set size in percentage of the parent's content area size (the size without paddings). x should be in [0..1000]% range
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
+ * Set minimum and the maximum values of a bar If min is greater than max, the drawing direction becomes to the opposite direction.
  */
-static jerry_value_t js_lv_obj_set_size(const jerry_call_info_t* info,
+static jerry_value_t js_lv_bar_set_range(const jerry_call_info_t* info,
     const jerry_value_t args[],
     const jerry_length_t argc) {
     // 参数数量检查
@@ -556,38 +470,240 @@ static jerry_value_t js_lv_obj_set_size(const jerry_call_info_t* info,
     jerry_value_free(obj_ptr_val);
     void* obj = (void*)obj_ptr;
     
-    // 解析参数: w (int32_t)
-    jerry_value_t js_w = args[1];
-    if (!jerry_value_is_number(js_w)) {
+    // 解析参数: min (int32_t)
+    jerry_value_t js_min = args[1];
+    if (!jerry_value_is_number(js_min)) {
         return throw_error("Argument 1 must be a number");
     }
     
-    int32_t w = (int32_t)jerry_value_as_number(js_w);
+    int32_t min = (int32_t)jerry_value_as_number(js_min);
     
-    // 解析参数: h (int32_t)
-    jerry_value_t js_h = args[2];
-    if (!jerry_value_is_number(js_h)) {
+    // 解析参数: max (int32_t)
+    jerry_value_t js_max = args[2];
+    if (!jerry_value_is_number(js_max)) {
         return throw_error("Argument 2 must be a number");
     }
     
-    int32_t h = (int32_t)jerry_value_as_number(js_h);
+    int32_t max = (int32_t)jerry_value_as_number(js_max);
     
     // 调用底层函数
-    lv_obj_set_size(obj, w, h);
+    lv_bar_set_range(obj, min, max);
     return jerry_undefined();
 }
 
 
 
 /**
- * Change the alignment of an object and set new coordinates. Equivalent to: lv_obj_set_align(obj, align); lv_obj_set_pos(obj, x_ofs, y_ofs);
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
+ * Create a check box object pointer to the created check box
  */
-static jerry_value_t js_lv_obj_align(const jerry_call_info_t* info,
+static jerry_value_t js_lv_checkbox_create(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: parent (lv_obj_t*)
+    jerry_value_t js_parent = args[0];
+    if (!jerry_value_is_object(js_parent)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t parent_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t parent_ptr_val = jerry_object_get(js_parent, parent_ptr_prop);
+    jerry_value_free(parent_ptr_prop);
+    
+    if (!jerry_value_is_number(parent_ptr_val)) {
+        jerry_value_free(parent_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t parent_ptr = (uintptr_t)jerry_value_as_number(parent_ptr_val);
+    jerry_value_free(parent_ptr_val);
+    void* parent = (void*)parent_ptr;
+    
+    // 调用底层函数
+    lv_obj_t* ret_value = lv_checkbox_create(parent);
+
+    // 处理返回值
+    // 包装为LVGL对象
+    jerry_value_t js_obj = jerry_object();
+    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls = jerry_string_sz("lv_obj");
+    
+    jerry_object_set(js_obj, jerry_string_sz("__ptr"), ptr);
+    jerry_object_set(js_obj, jerry_string_sz("__class"), cls);
+    
+    jerry_value_free(ptr);
+    jerry_value_free(cls);
+    return js_obj;
+}
+
+
+
+/**
+ * Create a slider object pointer to the created slider
+ */
+static jerry_value_t js_lv_slider_create(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: parent (lv_obj_t*)
+    jerry_value_t js_parent = args[0];
+    if (!jerry_value_is_object(js_parent)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t parent_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t parent_ptr_val = jerry_object_get(js_parent, parent_ptr_prop);
+    jerry_value_free(parent_ptr_prop);
+    
+    if (!jerry_value_is_number(parent_ptr_val)) {
+        jerry_value_free(parent_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t parent_ptr = (uintptr_t)jerry_value_as_number(parent_ptr_val);
+    jerry_value_free(parent_ptr_val);
+    void* parent = (void*)parent_ptr;
+    
+    // 调用底层函数
+    lv_obj_t* ret_value = lv_slider_create(parent);
+
+    // 处理返回值
+    // 包装为LVGL对象
+    jerry_value_t js_obj = jerry_object();
+    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls = jerry_string_sz("lv_obj");
+    
+    jerry_object_set(js_obj, jerry_string_sz("__ptr"), ptr);
+    jerry_object_set(js_obj, jerry_string_sz("__class"), cls);
+    
+    jerry_value_free(ptr);
+    jerry_value_free(cls);
+    return js_obj;
+}
+
+
+
+/**
+ * Create a base object (a rectangle) pointer to the new object
+ */
+static jerry_value_t js_lv_obj_create(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: parent (lv_obj_t*)
+    jerry_value_t js_parent = args[0];
+    if (!jerry_value_is_object(js_parent)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t parent_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t parent_ptr_val = jerry_object_get(js_parent, parent_ptr_prop);
+    jerry_value_free(parent_ptr_prop);
+    
+    if (!jerry_value_is_number(parent_ptr_val)) {
+        jerry_value_free(parent_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t parent_ptr = (uintptr_t)jerry_value_as_number(parent_ptr_val);
+    jerry_value_free(parent_ptr_val);
+    void* parent = (void*)parent_ptr;
+    
+    // 调用底层函数
+    lv_obj_t* ret_value = lv_obj_create(parent);
+
+    // 处理返回值
+    // 包装为LVGL对象
+    jerry_value_t js_obj = jerry_object();
+    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls = jerry_string_sz("lv_obj");
+    
+    jerry_object_set(js_obj, jerry_string_sz("__ptr"), ptr);
+    jerry_object_set(js_obj, jerry_string_sz("__class"), cls);
+    
+    jerry_value_free(ptr);
+    jerry_value_free(cls);
+    return js_obj;
+}
+
+
+
+/**
+ * Add or remove one or more states to the object. The other state bits will remain unchanged.
+ */
+static jerry_value_t js_lv_obj_set_state(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 3) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: state (lv_state_t)
+    jerry_value_t js_state = args[1];
+    if (!jerry_value_is_number(js_state)) {
+        return throw_error("Argument 1 must be a number");
+    }
+    
+    uint16_t state = (uint16_t)jerry_value_as_number(js_state);
+    
+    // 解析参数: v (bool)
+    // 布尔类型或兼容类型参数: v
+    bool v = false;
+    if (!jerry_value_is_undefined(args[2])) {
+        if (jerry_value_is_boolean(args[2])) {
+            v = jerry_value_to_boolean(args[2]);
+        }
+        else if (jerry_value_is_number(args[2])) {
+            v = (jerry_value_as_number(args[2]) != 0);
+        }
+        else {
+            return throw_error("Argument 2 must be boolean or number for bool");
+        }
+    }
+    
+    // 调用底层函数
+    lv_obj_set_state(obj, state, v);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Set the minimal and maximal y values on an axis
+ */
+static jerry_value_t js_lv_chart_set_range(const jerry_call_info_t* info,
     const jerry_value_t args[],
     const jerry_length_t argc) {
     // 参数数量检查
@@ -614,44 +730,763 @@ static jerry_value_t js_lv_obj_align(const jerry_call_info_t* info,
     jerry_value_free(obj_ptr_val);
     void* obj = (void*)obj_ptr;
     
-    // 解析参数: align (lv_align_t)
-    jerry_value_t js_align = args[1];
-    if (!jerry_value_is_number(js_align)) {
+    // 解析参数: axis (lv_chart_axis_t)
+    jerry_value_t js_axis = args[1];
+    if (!jerry_value_is_number(js_axis)) {
         return throw_error("Argument 1 must be a number");
     }
     
-    int align = (int)jerry_value_as_number(js_align);
+    int axis = (int)jerry_value_as_number(js_axis);
     
-    // 解析参数: x_ofs (int32_t)
-    jerry_value_t js_x_ofs = args[2];
-    if (!jerry_value_is_number(js_x_ofs)) {
+    // 解析参数: min (int32_t)
+    jerry_value_t js_min = args[2];
+    if (!jerry_value_is_number(js_min)) {
         return throw_error("Argument 2 must be a number");
     }
     
-    int32_t x_ofs = (int32_t)jerry_value_as_number(js_x_ofs);
+    int32_t min = (int32_t)jerry_value_as_number(js_min);
     
-    // 解析参数: y_ofs (int32_t)
-    jerry_value_t js_y_ofs = args[3];
-    if (!jerry_value_is_number(js_y_ofs)) {
+    // 解析参数: max (int32_t)
+    jerry_value_t js_max = args[3];
+    if (!jerry_value_is_number(js_max)) {
         return throw_error("Argument 3 must be a number");
     }
     
-    int32_t y_ofs = (int32_t)jerry_value_as_number(js_y_ofs);
+    int32_t max = (int32_t)jerry_value_as_number(js_max);
     
     // 调用底层函数
-    lv_obj_align(obj, align, x_ofs, y_ofs);
+    lv_chart_set_axis_range(obj, axis, min, max);
     return jerry_undefined();
 }
 
 
 
 /**
+ * lv_obj_set_style_radius function (aliased to lv_obj_set_style_radius)
+ */
+static jerry_value_t js_lv_obj_set_style_radius(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 3) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: value (int32_t)
+    jerry_value_t js_value = args[1];
+    if (!jerry_value_is_number(js_value)) {
+        return throw_error("Argument 1 must be a number");
+    }
+    
+    int32_t value = (int32_t)jerry_value_as_number(js_value);
+    
+    // 解析参数: selector (lv_style_selector_t)
+    jerry_value_t js_selector = args[2];
+    if (!jerry_value_is_number(js_selector)) {
+        return throw_error("Argument 2 must be a number");
+    }
+    
+    uint32_t selector = (uint32_t)jerry_value_as_number(js_selector);
+    
+    // 调用底层函数
+    lv_obj_set_style_radius(obj, value, selector);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Delete all children of an object. Also remove the objects from their group and remove all animations (if any). Send LV_EVENT_DELETED to deleted objects.
+ */
+static jerry_value_t js_lv_obj_clean(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 调用底层函数
+    lv_obj_clean(obj);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Set minimum and the maximum values of a bar
+ */
+static jerry_value_t js_lv_slider_set_range(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 3) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: min (int32_t)
+    jerry_value_t js_min = args[1];
+    if (!jerry_value_is_number(js_min)) {
+        return throw_error("Argument 1 must be a number");
+    }
+    
+    int32_t min = (int32_t)jerry_value_as_number(js_min);
+    
+    // 解析参数: max (int32_t)
+    jerry_value_t js_max = args[2];
+    if (!jerry_value_is_number(js_max)) {
+        return throw_error("Argument 2 must be a number");
+    }
+    
+    int32_t max = (int32_t)jerry_value_as_number(js_max);
+    
+    // 调用底层函数
+    lv_slider_set_range(obj, min, max);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Set the text of a text area
+ */
+static jerry_value_t js_lv_textarea_set_text(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: txt (const char*)
+    jerry_value_t js_txt = args[1];
+    if (!jerry_value_is_string(js_txt)) {
+        return throw_error("Argument 1 must be a string");
+    }
+    
+    jerry_size_t txt_len = jerry_string_size(js_txt, JERRY_ENCODING_UTF8);
+    char* txt = (char*)malloc(txt_len + 1);
+    if (!txt) {
+        return throw_error("Out of memory");
+    }
+    jerry_string_to_buffer(js_txt, JERRY_ENCODING_UTF8, (jerry_char_t*)txt, txt_len);
+    txt[txt_len] = '\0';
+
+    // 调用底层函数
+    lv_textarea_set_text(obj, txt);
+    free(txt);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Get Widget originally targeted by the event. It's the same even if event was bubbled. the target of the event_code
+ */
+static jerry_value_t js_lv_event_get_target(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: e (lv_event_t*)
+    jerry_value_t js_e = args[0];
+    if (!jerry_value_is_object(js_e)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t e_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t e_ptr_val = jerry_object_get(js_e, e_ptr_prop);
+    jerry_value_free(e_ptr_prop);
+    
+    if (!jerry_value_is_number(e_ptr_val)) {
+        jerry_value_free(e_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t e_ptr = (uintptr_t)jerry_value_as_number(e_ptr_val);
+    jerry_value_free(e_ptr_val);
+    void* e = (void*)e_ptr;
+    
+    // 调用底层函数
+    void* ret_value = lv_event_get_target(e);
+
+    // 处理返回值
+    // 包装为通用指针对象
+    jerry_value_t js_obj = jerry_object();
+    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    
+    jerry_object_set(js_obj, jerry_string_sz("__ptr"), ptr);
+    jerry_object_set(js_obj, jerry_string_sz("__type"), jerry_string_sz("void*"));
+    
+    jerry_value_free(ptr);
+    return js_obj;
+}
+
+
+
+/**
+ * Close a message box
+ */
+static jerry_value_t js_lv_msgbox_close(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: mbox (lv_obj_t*)
+    jerry_value_t js_mbox = args[0];
+    if (!jerry_value_is_object(js_mbox)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t mbox_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t mbox_ptr_val = jerry_object_get(js_mbox, mbox_ptr_prop);
+    jerry_value_free(mbox_ptr_prop);
+    
+    if (!jerry_value_is_number(mbox_ptr_val)) {
+        jerry_value_free(mbox_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t mbox_ptr = (uintptr_t)jerry_value_as_number(mbox_ptr_val);
+    jerry_value_free(mbox_ptr_val);
+    void* mbox = (void*)mbox_ptr;
+    
+    // 调用底层函数
+    lv_msgbox_close(mbox);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * lv_obj_set_style_pad_row function (aliased to lv_obj_set_style_pad_row)
+ */
+static jerry_value_t js_lv_obj_set_style_pad_row(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 3) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: value (int32_t)
+    jerry_value_t js_value = args[1];
+    if (!jerry_value_is_number(js_value)) {
+        return throw_error("Argument 1 must be a number");
+    }
+    
+    int32_t value = (int32_t)jerry_value_as_number(js_value);
+    
+    // 解析参数: selector (lv_style_selector_t)
+    jerry_value_t js_selector = args[2];
+    if (!jerry_value_is_number(js_selector)) {
+        return throw_error("Argument 2 must be a number");
+    }
+    
+    uint32_t selector = (uint32_t)jerry_value_as_number(js_selector);
+    
+    // 调用底层函数
+    lv_obj_set_style_pad_row(obj, value, selector);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Get user_data passed when event was registered on Widget. pointer to the user_data
+ */
+static jerry_value_t js_lv_event_get_user_data(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: e (lv_event_t*)
+    jerry_value_t js_e = args[0];
+    if (!jerry_value_is_object(js_e)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t e_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t e_ptr_val = jerry_object_get(js_e, e_ptr_prop);
+    jerry_value_free(e_ptr_prop);
+    
+    if (!jerry_value_is_number(e_ptr_val)) {
+        jerry_value_free(e_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t e_ptr = (uintptr_t)jerry_value_as_number(e_ptr_val);
+    jerry_value_free(e_ptr_val);
+    void* e = (void*)e_ptr;
+    
+    // 调用底层函数
+    void* ret_value = lv_event_get_user_data(e);
+
+    // 处理返回值
+    // 包装为通用指针对象
+    jerry_value_t js_obj = jerry_object();
+    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    
+    jerry_object_set(js_obj, jerry_string_sz("__ptr"), ptr);
+    jerry_object_set(js_obj, jerry_string_sz("__type"), jerry_string_sz("void*"));
+    
+    jerry_value_free(ptr);
+    return js_obj;
+}
+
+
+
+/**
+ * Set minimum and the maximum values of an arc
+ */
+static jerry_value_t js_lv_arc_set_range(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 3) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: min (int32_t)
+    jerry_value_t js_min = args[1];
+    if (!jerry_value_is_number(js_min)) {
+        return throw_error("Argument 1 must be a number");
+    }
+    
+    int32_t min = (int32_t)jerry_value_as_number(js_min);
+    
+    // 解析参数: max (int32_t)
+    jerry_value_t js_max = args[2];
+    if (!jerry_value_is_number(js_max)) {
+        return throw_error("Argument 2 must be a number");
+    }
+    
+    int32_t max = (int32_t)jerry_value_as_number(js_max);
+    
+    // 调用底层函数
+    lv_arc_set_range(obj, min, max);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * lv_obj_set_style_pad_all function (aliased to lv_obj_set_style_pad_all)
+ */
+static jerry_value_t js_lv_obj_set_style_pad_all(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 3) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: value (int32_t)
+    jerry_value_t js_value = args[1];
+    if (!jerry_value_is_number(js_value)) {
+        return throw_error("Argument 1 must be a number");
+    }
+    
+    int32_t value = (int32_t)jerry_value_as_number(js_value);
+    
+    // 解析参数: selector (lv_style_selector_t)
+    jerry_value_t js_selector = args[2];
+    if (!jerry_value_is_number(js_selector)) {
+        return throw_error("Argument 2 must be a number");
+    }
+    
+    uint32_t selector = (uint32_t)jerry_value_as_number(js_selector);
+    
+    // 调用底层函数
+    lv_obj_set_style_pad_all(obj, value, selector);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * lv_obj_set_style_border_color function (aliased to lv_obj_set_style_border_color)
+ */
+static jerry_value_t js_lv_obj_set_style_border_color(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 3) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: value (lv_color_t)
+    lv_color_t value = parse_lv_color(args[1]);
+
+    // 解析参数: selector (lv_style_selector_t)
+    jerry_value_t js_selector = args[2];
+    if (!jerry_value_is_number(js_selector)) {
+        return throw_error("Argument 2 must be a number");
+    }
+    
+    uint32_t selector = (uint32_t)jerry_value_as_number(js_selector);
+    
+    // 调用底层函数
+    lv_obj_set_style_border_color(obj, value, selector);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * lv_obj_set_style_bg_color function (aliased to lv_obj_set_style_bg_color)
+ */
+static jerry_value_t js_lv_obj_set_style_bg_color(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 3) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: value (lv_color_t)
+    lv_color_t value = parse_lv_color(args[1]);
+
+    // 解析参数: selector (lv_style_selector_t)
+    jerry_value_t js_selector = args[2];
+    if (!jerry_value_is_number(js_selector)) {
+        return throw_error("Argument 2 must be a number");
+    }
+    
+    uint32_t selector = (uint32_t)jerry_value_as_number(js_selector);
+    
+    // 调用底层函数
+    lv_obj_set_style_bg_color(obj, value, selector);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Set a new value on the arc
+ */
+static jerry_value_t js_lv_arc_set_value(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: value (int32_t)
+    jerry_value_t js_value = args[1];
+    if (!jerry_value_is_number(js_value)) {
+        return throw_error("Argument 1 must be a number");
+    }
+    
+    int32_t value = (int32_t)jerry_value_as_number(js_value);
+    
+    // 调用底层函数
+    lv_arc_set_value(obj, value);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Create a label object pointer to the created button
+ */
+static jerry_value_t js_lv_label_create(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: parent (lv_obj_t*)
+    jerry_value_t js_parent = args[0];
+    if (!jerry_value_is_object(js_parent)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t parent_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t parent_ptr_val = jerry_object_get(js_parent, parent_ptr_prop);
+    jerry_value_free(parent_ptr_prop);
+    
+    if (!jerry_value_is_number(parent_ptr_val)) {
+        jerry_value_free(parent_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t parent_ptr = (uintptr_t)jerry_value_as_number(parent_ptr_val);
+    jerry_value_free(parent_ptr_val);
+    void* parent = (void*)parent_ptr;
+    
+    // 调用底层函数
+    lv_obj_t* ret_value = lv_label_create(parent);
+
+    // 处理返回值
+    // 包装为LVGL对象
+    jerry_value_t js_obj = jerry_object();
+    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls = jerry_string_sz("lv_obj");
+    
+    jerry_object_set(js_obj, jerry_string_sz("__ptr"), ptr);
+    jerry_object_set(js_obj, jerry_string_sz("__class"), cls);
+    
+    jerry_value_free(ptr);
+    jerry_value_free(cls);
+    return js_obj;
+}
+
+
+
+/**
+ * Create a drop-down list object pointer to the created drop-down list
+ */
+static jerry_value_t js_lv_dropdown_create(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: parent (lv_obj_t*)
+    jerry_value_t js_parent = args[0];
+    if (!jerry_value_is_object(js_parent)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t parent_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t parent_ptr_val = jerry_object_get(js_parent, parent_ptr_prop);
+    jerry_value_free(parent_ptr_prop);
+    
+    if (!jerry_value_is_number(parent_ptr_val)) {
+        jerry_value_free(parent_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t parent_ptr = (uintptr_t)jerry_value_as_number(parent_ptr_val);
+    jerry_value_free(parent_ptr_val);
+    void* parent = (void*)parent_ptr;
+    
+    // 调用底层函数
+    lv_obj_t* ret_value = lv_dropdown_create(parent);
+
+    // 处理返回值
+    // 包装为LVGL对象
+    jerry_value_t js_obj = jerry_object();
+    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls = jerry_string_sz("lv_obj");
+    
+    jerry_object_set(js_obj, jerry_string_sz("__ptr"), ptr);
+    jerry_object_set(js_obj, jerry_string_sz("__class"), cls);
+    
+    jerry_value_free(ptr);
+    jerry_value_free(cls);
+    return js_obj;
+}
+
+
+
+/**
  * Align an object to another object. if the position or size of base changes obj needs to be aligned manually again
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
  */
 static jerry_value_t js_lv_obj_align_to(const jerry_call_info_t* info,
     const jerry_value_t args[],
@@ -731,14 +1566,54 @@ static jerry_value_t js_lv_obj_align_to(const jerry_call_info_t* info,
 
 
 /**
- * Align an object to the center on its parent. if the parent size changes obj needs to be aligned manually again
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
+ * Set the number of rows
  */
-static jerry_value_t js_lv_obj_center(const jerry_call_info_t* info,
+static jerry_value_t js_lv_table_set_row_cnt(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: row_cnt (uint32_t)
+    jerry_value_t js_row_cnt = args[1];
+    if (!jerry_value_is_number(js_row_cnt)) {
+        return throw_error("Argument 1 must be a number");
+    }
+    
+    uint32_t row_cnt = (uint32_t)jerry_value_as_number(js_row_cnt);
+    
+    // 调用底层函数
+    lv_table_set_row_count(obj, row_cnt);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Delete an object and all of its children. Also remove the objects from their group and remove all animations (if any). Send LV_EVENT_DELETED to deleted objects.
+ */
+static jerry_value_t js_lv_obj_del(const jerry_call_info_t* info,
     const jerry_value_t args[],
     const jerry_length_t argc) {
     // 参数数量检查
@@ -766,7 +1641,1000 @@ static jerry_value_t js_lv_obj_center(const jerry_call_info_t* info,
     void* obj = (void*)obj_ptr;
     
     // 调用底层函数
-    lv_obj_center(obj);
+    lv_obj_delete(obj);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Set the text of a check box. txt will be copied and may be deallocated after this function returns.
+ */
+static jerry_value_t js_lv_checkbox_set_text(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: txt (const char*)
+    jerry_value_t js_txt = args[1];
+    if (!jerry_value_is_string(js_txt)) {
+        return throw_error("Argument 1 must be a string");
+    }
+    
+    jerry_size_t txt_len = jerry_string_size(js_txt, JERRY_ENCODING_UTF8);
+    char* txt = (char*)malloc(txt_len + 1);
+    if (!txt) {
+        return throw_error("Out of memory");
+    }
+    jerry_string_to_buffer(js_txt, JERRY_ENCODING_UTF8, (jerry_char_t*)txt, txt_len);
+    txt[txt_len] = '\0';
+
+    // 调用底层函数
+    lv_checkbox_set_text(obj, txt);
+    free(txt);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Set the zoom factor of the image. Note that indexed and alpha only images can't be transformed.
+ */
+static jerry_value_t js_lv_img_set_zoom(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: zoom (uint32_t)
+    jerry_value_t js_zoom = args[1];
+    if (!jerry_value_is_number(js_zoom)) {
+        return throw_error("Argument 1 must be a number");
+    }
+    
+    uint32_t zoom = (uint32_t)jerry_value_as_number(js_zoom);
+    
+    // 调用底层函数
+    lv_image_set_scale(obj, zoom);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Get event code of an event. the event code. (E.g. LV_EVENT_CLICKED , LV_EVENT_FOCUSED , etc)
+ */
+static jerry_value_t js_lv_event_get_code(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: e (lv_event_t*)
+    jerry_value_t js_e = args[0];
+    if (!jerry_value_is_object(js_e)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t e_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t e_ptr_val = jerry_object_get(js_e, e_ptr_prop);
+    jerry_value_free(e_ptr_prop);
+    
+    if (!jerry_value_is_number(e_ptr_val)) {
+        jerry_value_free(e_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t e_ptr = (uintptr_t)jerry_value_as_number(e_ptr_val);
+    jerry_value_free(e_ptr_val);
+    void* e = (void*)e_ptr;
+    
+    // 调用底层函数
+    lv_event_code_t ret_value = lv_event_get_code(e);
+
+    // 处理返回值
+    return jerry_number(ret_value);
+}
+
+
+
+/**
+ * Set the start and end angles of the arc background
+ */
+static jerry_value_t js_lv_arc_set_bg_angles(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 3) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: start (lv_value_precise_t)
+    jerry_value_t js_start = args[1];
+    if (!jerry_value_is_number(js_start)) {
+        return throw_error("Argument 1 must be a number");
+    }
+    
+    float start = (float)jerry_value_as_number(js_start);
+    
+    // 解析参数: end (lv_value_precise_t)
+    jerry_value_t js_end = args[2];
+    if (!jerry_value_is_number(js_end)) {
+        return throw_error("Argument 2 must be a number");
+    }
+    
+    float end = (float)jerry_value_as_number(js_end);
+    
+    // 调用底层函数
+    lv_arc_set_bg_angles(obj, start, end);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Set the value of a cell. New roes/columns are added automatically if required
+ */
+static jerry_value_t js_lv_table_set_cell_value(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 4) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: row (uint32_t)
+    jerry_value_t js_row = args[1];
+    if (!jerry_value_is_number(js_row)) {
+        return throw_error("Argument 1 must be a number");
+    }
+    
+    uint32_t row = (uint32_t)jerry_value_as_number(js_row);
+    
+    // 解析参数: col (uint32_t)
+    jerry_value_t js_col = args[2];
+    if (!jerry_value_is_number(js_col)) {
+        return throw_error("Argument 2 must be a number");
+    }
+    
+    uint32_t col = (uint32_t)jerry_value_as_number(js_col);
+    
+    // 解析参数: txt (const char*)
+    jerry_value_t js_txt = args[3];
+    if (!jerry_value_is_string(js_txt)) {
+        return throw_error("Argument 3 must be a string");
+    }
+    
+    jerry_size_t txt_len = jerry_string_size(js_txt, JERRY_ENCODING_UTF8);
+    char* txt = (char*)malloc(txt_len + 1);
+    if (!txt) {
+        return throw_error("Out of memory");
+    }
+    jerry_string_to_buffer(js_txt, JERRY_ENCODING_UTF8, (jerry_char_t*)txt, txt_len);
+    txt[txt_len] = '\0';
+
+    // 调用底层函数
+    lv_table_set_cell_value(obj, row, col, txt);
+    free(txt);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Set the size of an object. possible values are: pixel simple set the size accordingly LV_SIZE_CONTENT set the size to involve all children in the given direction lv_pct(x) to set size in percentage of the parent's content area size (the size without paddings). x should be in [0..1000]% range
+ */
+static jerry_value_t js_lv_obj_set_size(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 3) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: w (int32_t)
+    jerry_value_t js_w = args[1];
+    if (!jerry_value_is_number(js_w)) {
+        return throw_error("Argument 1 must be a number");
+    }
+    
+    int32_t w = (int32_t)jerry_value_as_number(js_w);
+    
+    // 解析参数: h (int32_t)
+    jerry_value_t js_h = args[2];
+    if (!jerry_value_is_number(js_h)) {
+        return throw_error("Argument 2 must be a number");
+    }
+    
+    int32_t h = (int32_t)jerry_value_as_number(js_h);
+    
+    // 调用底层函数
+    lv_obj_set_size(obj, w, h);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Create an arc object pointer to the created arc
+ */
+static jerry_value_t js_lv_arc_create(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: parent (lv_obj_t*)
+    jerry_value_t js_parent = args[0];
+    if (!jerry_value_is_object(js_parent)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t parent_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t parent_ptr_val = jerry_object_get(js_parent, parent_ptr_prop);
+    jerry_value_free(parent_ptr_prop);
+    
+    if (!jerry_value_is_number(parent_ptr_val)) {
+        jerry_value_free(parent_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t parent_ptr = (uintptr_t)jerry_value_as_number(parent_ptr_val);
+    jerry_value_free(parent_ptr_val);
+    void* parent = (void*)parent_ptr;
+    
+    // 调用底层函数
+    lv_obj_t* ret_value = lv_arc_create(parent);
+
+    // 处理返回值
+    // 包装为LVGL对象
+    jerry_value_t js_obj = jerry_object();
+    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls = jerry_string_sz("lv_obj");
+    
+    jerry_object_set(js_obj, jerry_string_sz("__ptr"), ptr);
+    jerry_object_set(js_obj, jerry_string_sz("__class"), cls);
+    
+    jerry_value_free(ptr);
+    jerry_value_free(cls);
+    return js_obj;
+}
+
+
+
+/**
+ * lv_obj_set_style_text_color function (aliased to lv_obj_set_style_text_color)
+ */
+static jerry_value_t js_lv_obj_set_style_text_color(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 3) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: value (lv_color_t)
+    lv_color_t value = parse_lv_color(args[1]);
+
+    // 解析参数: selector (lv_style_selector_t)
+    jerry_value_t js_selector = args[2];
+    if (!jerry_value_is_number(js_selector)) {
+        return throw_error("Argument 2 must be a number");
+    }
+    
+    uint32_t selector = (uint32_t)jerry_value_as_number(js_selector);
+    
+    // 调用底层函数
+    lv_obj_set_style_text_color(obj, value, selector);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Set the behavior of the label with text longer than the object size
+ */
+static jerry_value_t js_lv_label_set_long_mode(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: long_mode (lv_label_long_mode_t)
+    jerry_value_t js_long_mode = args[1];
+    if (!jerry_value_is_number(js_long_mode)) {
+        return throw_error("Argument 1 must be a number");
+    }
+    
+    lv_label_long_mode_t long_mode = (lv_label_long_mode_t)jerry_value_as_number(js_long_mode);
+    
+    // 调用底层函数
+    lv_label_set_long_mode(obj, long_mode);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Create a table object pointer to the created table
+ */
+static jerry_value_t js_lv_table_create(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: parent (lv_obj_t*)
+    jerry_value_t js_parent = args[0];
+    if (!jerry_value_is_object(js_parent)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t parent_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t parent_ptr_val = jerry_object_get(js_parent, parent_ptr_prop);
+    jerry_value_free(parent_ptr_prop);
+    
+    if (!jerry_value_is_number(parent_ptr_val)) {
+        jerry_value_free(parent_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t parent_ptr = (uintptr_t)jerry_value_as_number(parent_ptr_val);
+    jerry_value_free(parent_ptr_val);
+    void* parent = (void*)parent_ptr;
+    
+    // 调用底层函数
+    lv_obj_t* ret_value = lv_table_create(parent);
+
+    // 处理返回值
+    // 包装为LVGL对象
+    jerry_value_t js_obj = jerry_object();
+    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls = jerry_string_sz("lv_obj");
+    
+    jerry_object_set(js_obj, jerry_string_sz("__ptr"), ptr);
+    jerry_object_set(js_obj, jerry_string_sz("__class"), cls);
+    
+    jerry_value_free(ptr);
+    jerry_value_free(cls);
+    return js_obj;
+}
+
+
+
+/**
+ * Create a text area object pointer to the created text area
+ */
+static jerry_value_t js_lv_textarea_create(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: parent (lv_obj_t*)
+    jerry_value_t js_parent = args[0];
+    if (!jerry_value_is_object(js_parent)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t parent_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t parent_ptr_val = jerry_object_get(js_parent, parent_ptr_prop);
+    jerry_value_free(parent_ptr_prop);
+    
+    if (!jerry_value_is_number(parent_ptr_val)) {
+        jerry_value_free(parent_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t parent_ptr = (uintptr_t)jerry_value_as_number(parent_ptr_val);
+    jerry_value_free(parent_ptr_val);
+    void* parent = (void*)parent_ptr;
+    
+    // 调用底层函数
+    lv_obj_t* ret_value = lv_textarea_create(parent);
+
+    // 处理返回值
+    // 包装为LVGL对象
+    jerry_value_t js_obj = jerry_object();
+    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls = jerry_string_sz("lv_obj");
+    
+    jerry_object_set(js_obj, jerry_string_sz("__ptr"), ptr);
+    jerry_object_set(js_obj, jerry_string_sz("__class"), cls);
+    
+    jerry_value_free(ptr);
+    jerry_value_free(cls);
+    return js_obj;
+}
+
+
+
+/**
+ * Set a new value on the slider
+ */
+static jerry_value_t js_lv_slider_set_value(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 3) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: value (int32_t)
+    jerry_value_t js_value = args[1];
+    if (!jerry_value_is_number(js_value)) {
+        return throw_error("Argument 1 must be a number");
+    }
+    
+    int32_t value = (int32_t)jerry_value_as_number(js_value);
+    
+    // 解析参数: anim (lv_anim_enable_t)
+    // 布尔类型或兼容类型参数: anim
+    bool anim = false;
+    if (!jerry_value_is_undefined(args[2])) {
+        if (jerry_value_is_boolean(args[2])) {
+            anim = jerry_value_to_boolean(args[2]);
+        }
+        else if (jerry_value_is_number(args[2])) {
+            anim = (jerry_value_as_number(args[2]) != 0);
+        }
+        else {
+            return throw_error("Argument 2 must be boolean or number for lv_anim_enable_t");
+        }
+    }
+    
+    // 调用底层函数
+    lv_slider_set_value(obj, value, anim);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Set a new value on the bar
+ */
+static jerry_value_t js_lv_bar_set_value(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 3) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: value (int32_t)
+    jerry_value_t js_value = args[1];
+    if (!jerry_value_is_number(js_value)) {
+        return throw_error("Argument 1 must be a number");
+    }
+    
+    int32_t value = (int32_t)jerry_value_as_number(js_value);
+    
+    // 解析参数: anim (lv_anim_enable_t)
+    // 布尔类型或兼容类型参数: anim
+    bool anim = false;
+    if (!jerry_value_is_undefined(args[2])) {
+        if (jerry_value_is_boolean(args[2])) {
+            anim = jerry_value_to_boolean(args[2]);
+        }
+        else if (jerry_value_is_number(args[2])) {
+            anim = (jerry_value_as_number(args[2]) != 0);
+        }
+        else {
+            return throw_error("Argument 2 must be boolean or number for lv_anim_enable_t");
+        }
+    }
+    
+    // 调用底层函数
+    lv_bar_set_value(obj, value, anim);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Create a button object pointer to the created button
+ */
+static jerry_value_t js_lv_btn_create(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: parent (lv_obj_t*)
+    jerry_value_t js_parent = args[0];
+    if (!jerry_value_is_object(js_parent)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t parent_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t parent_ptr_val = jerry_object_get(js_parent, parent_ptr_prop);
+    jerry_value_free(parent_ptr_prop);
+    
+    if (!jerry_value_is_number(parent_ptr_val)) {
+        jerry_value_free(parent_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t parent_ptr = (uintptr_t)jerry_value_as_number(parent_ptr_val);
+    jerry_value_free(parent_ptr_val);
+    void* parent = (void*)parent_ptr;
+    
+    // 调用底层函数
+    lv_obj_t* ret_value = lv_button_create(parent);
+
+    // 处理返回值
+    // 包装为LVGL对象
+    jerry_value_t js_obj = jerry_object();
+    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls = jerry_string_sz("lv_obj");
+    
+    jerry_object_set(js_obj, jerry_string_sz("__ptr"), ptr);
+    jerry_object_set(js_obj, jerry_string_sz("__class"), cls);
+    
+    jerry_value_free(ptr);
+    jerry_value_free(cls);
+    return js_obj;
+}
+
+
+
+/**
+ * Enable the recoloring by in-line commands
+ */
+static jerry_value_t js_lv_label_set_recolor(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: en (bool)
+    // 布尔类型或兼容类型参数: en
+    bool en = false;
+    if (!jerry_value_is_undefined(args[1])) {
+        if (jerry_value_is_boolean(args[1])) {
+            en = jerry_value_to_boolean(args[1]);
+        }
+        else if (jerry_value_is_number(args[1])) {
+            en = (jerry_value_as_number(args[1]) != 0);
+        }
+        else {
+            return throw_error("Argument 1 must be boolean or number for bool");
+        }
+    }
+    
+    // 调用底层函数
+    lv_label_set_recolor(obj, en);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Change the alignment of an object and set new coordinates. Equivalent to: lv_obj_set_align(obj, align); lv_obj_set_pos(obj, x_ofs, y_ofs);
+ */
+static jerry_value_t js_lv_obj_align(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 4) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: align (lv_align_t)
+    jerry_value_t js_align = args[1];
+    if (!jerry_value_is_number(js_align)) {
+        return throw_error("Argument 1 must be a number");
+    }
+    
+    int align = (int)jerry_value_as_number(js_align);
+    
+    // 解析参数: x_ofs (int32_t)
+    jerry_value_t js_x_ofs = args[2];
+    if (!jerry_value_is_number(js_x_ofs)) {
+        return throw_error("Argument 2 must be a number");
+    }
+    
+    int32_t x_ofs = (int32_t)jerry_value_as_number(js_x_ofs);
+    
+    // 解析参数: y_ofs (int32_t)
+    jerry_value_t js_y_ofs = args[3];
+    if (!jerry_value_is_number(js_y_ofs)) {
+        return throw_error("Argument 3 must be a number");
+    }
+    
+    int32_t y_ofs = (int32_t)jerry_value_as_number(js_y_ofs);
+    
+    // 调用底层函数
+    lv_obj_align(obj, align, x_ofs, y_ofs);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Create a chart object pointer to the created chart
+ */
+static jerry_value_t js_lv_chart_create(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: parent (lv_obj_t*)
+    jerry_value_t js_parent = args[0];
+    if (!jerry_value_is_object(js_parent)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t parent_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t parent_ptr_val = jerry_object_get(js_parent, parent_ptr_prop);
+    jerry_value_free(parent_ptr_prop);
+    
+    if (!jerry_value_is_number(parent_ptr_val)) {
+        jerry_value_free(parent_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t parent_ptr = (uintptr_t)jerry_value_as_number(parent_ptr_val);
+    jerry_value_free(parent_ptr_val);
+    void* parent = (void*)parent_ptr;
+    
+    // 调用底层函数
+    lv_obj_t* ret_value = lv_chart_create(parent);
+
+    // 处理返回值
+    // 包装为LVGL对象
+    jerry_value_t js_obj = jerry_object();
+    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls = jerry_string_sz("lv_obj");
+    
+    jerry_object_set(js_obj, jerry_string_sz("__ptr"), ptr);
+    jerry_object_set(js_obj, jerry_string_sz("__class"), cls);
+    
+    jerry_value_free(ptr);
+    jerry_value_free(cls);
+    return js_obj;
+}
+
+
+
+/**
+ * Set the selected option
+ */
+static jerry_value_t js_lv_roller_set_selected(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 3) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: sel_opt (uint32_t)
+    jerry_value_t js_sel_opt = args[1];
+    if (!jerry_value_is_number(js_sel_opt)) {
+        return throw_error("Argument 1 must be a number");
+    }
+    
+    uint32_t sel_opt = (uint32_t)jerry_value_as_number(js_sel_opt);
+    
+    // 解析参数: anim (lv_anim_enable_t)
+    // 布尔类型或兼容类型参数: anim
+    bool anim = false;
+    if (!jerry_value_is_undefined(args[2])) {
+        if (jerry_value_is_boolean(args[2])) {
+            anim = jerry_value_to_boolean(args[2]);
+        }
+        else if (jerry_value_is_number(args[2])) {
+            anim = (jerry_value_as_number(args[2]) != 0);
+        }
+        else {
+            return throw_error("Argument 2 must be boolean or number for lv_anim_enable_t");
+        }
+    }
+    
+    // 调用底层函数
+    lv_roller_set_selected(obj, sel_opt, anim);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Set the placeholder text of a text area
+ */
+static jerry_value_t js_lv_textarea_set_placeholder_text(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: txt (const char*)
+    jerry_value_t js_txt = args[1];
+    if (!jerry_value_is_string(js_txt)) {
+        return throw_error("Argument 1 must be a string");
+    }
+    
+    jerry_size_t txt_len = jerry_string_size(js_txt, JERRY_ENCODING_UTF8);
+    char* txt = (char*)malloc(txt_len + 1);
+    if (!txt) {
+        return throw_error("Out of memory");
+    }
+    jerry_string_to_buffer(js_txt, JERRY_ENCODING_UTF8, (jerry_char_t*)txt, txt_len);
+    txt[txt_len] = '\0';
+
+    // 调用底层函数
+    lv_textarea_set_placeholder_text(obj, txt);
+    free(txt);
     return jerry_undefined();
 }
 
@@ -774,11 +2642,6 @@ static jerry_value_t js_lv_obj_center(const jerry_call_info_t* info,
 
 /**
  * Add a style to an object. lv_obj_add_style(btn, &style_btn, 0); //Default button style lv_obj_add_style(btn, &btn_red, LV_STATE_PRESSED); //Overwrite only some colors to red when pressed
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
  */
 static jerry_value_t js_lv_obj_add_style(const jerry_call_info_t* info,
     const jerry_value_t args[],
@@ -842,18 +2705,28 @@ static jerry_value_t js_lv_obj_add_style(const jerry_call_info_t* info,
 
 
 /**
- * lv_obj_set_style_pad_row function
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
+ * lv_timer_handler function (aliased to lv_timer_handler)
  */
-static jerry_value_t js_lv_obj_set_style_pad_row(const jerry_call_info_t* info,
+static jerry_value_t js_lv_timer_handler(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 调用底层函数
+    uint32_t ret_value = lv_timer_handler();
+
+    // 处理返回值
+    return jerry_number(ret_value);
+}
+
+
+
+/**
+ * Insert a text to the current cursor position
+ */
+static jerry_value_t js_lv_textarea_add_text(const jerry_call_info_t* info,
     const jerry_value_t args[],
     const jerry_length_t argc) {
     // 参数数量检查
-    if (argc < 3) {
+    if (argc < 2) {
         return throw_error("Insufficient arguments");
     }
 
@@ -876,311 +2749,212 @@ static jerry_value_t js_lv_obj_set_style_pad_row(const jerry_call_info_t* info,
     jerry_value_free(obj_ptr_val);
     void* obj = (void*)obj_ptr;
     
-    // 解析参数: value (int32_t)
-    jerry_value_t js_value = args[1];
-    if (!jerry_value_is_number(js_value)) {
+    // 解析参数: txt (const char*)
+    jerry_value_t js_txt = args[1];
+    if (!jerry_value_is_string(js_txt)) {
+        return throw_error("Argument 1 must be a string");
+    }
+    
+    jerry_size_t txt_len = jerry_string_size(js_txt, JERRY_ENCODING_UTF8);
+    char* txt = (char*)malloc(txt_len + 1);
+    if (!txt) {
+        return throw_error("Out of memory");
+    }
+    jerry_string_to_buffer(js_txt, JERRY_ENCODING_UTF8, (jerry_char_t*)txt, txt_len);
+    txt[txt_len] = '\0';
+
+    // 调用底层函数
+    lv_textarea_add_text(obj, txt);
+    free(txt);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Get the index of the selected option index of the selected option (0 ... number of option - 1);
+ */
+static jerry_value_t js_lv_dropdown_get_selected(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (const lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 调用底层函数
+    uint32_t ret_value = lv_dropdown_get_selected(obj);
+
+    // 处理返回值
+    return jerry_number(ret_value);
+}
+
+
+
+/**
+ * Create an empty message box the created message box
+ */
+static jerry_value_t js_lv_msgbox_create(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: parent (lv_obj_t*)
+    jerry_value_t js_parent = args[0];
+    if (!jerry_value_is_object(js_parent)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t parent_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t parent_ptr_val = jerry_object_get(js_parent, parent_ptr_prop);
+    jerry_value_free(parent_ptr_prop);
+    
+    if (!jerry_value_is_number(parent_ptr_val)) {
+        jerry_value_free(parent_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t parent_ptr = (uintptr_t)jerry_value_as_number(parent_ptr_val);
+    jerry_value_free(parent_ptr_val);
+    void* parent = (void*)parent_ptr;
+    
+    // 调用底层函数
+    lv_obj_t* ret_value = lv_msgbox_create(parent);
+
+    // 处理返回值
+    // 包装为LVGL对象
+    jerry_value_t js_obj = jerry_object();
+    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls = jerry_string_sz("lv_obj");
+    
+    jerry_object_set(js_obj, jerry_string_sz("__ptr"), ptr);
+    jerry_object_set(js_obj, jerry_string_sz("__class"), cls);
+    
+    jerry_value_free(ptr);
+    jerry_value_free(cls);
+    return js_obj;
+}
+
+
+
+/**
+ * Remove one or more flags
+ */
+static jerry_value_t js_lv_obj_clear_flag(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: f (lv_obj_flag_t)
+    jerry_value_t js_f = args[1];
+    if (!jerry_value_is_number(js_f)) {
         return throw_error("Argument 1 must be a number");
     }
     
-    int32_t value = (int32_t)jerry_value_as_number(js_value);
-    
-    // 解析参数: selector (lv_style_selector_t)
-    jerry_value_t js_selector = args[2];
-    if (!jerry_value_is_number(js_selector)) {
-        return throw_error("Argument 2 must be a number");
-    }
-    
-    uint32_t selector = (uint32_t)jerry_value_as_number(js_selector);
+    int f = (int)jerry_value_as_number(js_f);
     
     // 调用底层函数
-    lv_obj_set_style_pad_row(obj, value, selector);
+    lv_obj_remove_flag(obj, f);
     return jerry_undefined();
 }
 
 
 
 /**
- * lv_obj_set_style_pad_column function
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
+ * Create a roller object pointer to the created roller
  */
-static jerry_value_t js_lv_obj_set_style_pad_column(const jerry_call_info_t* info,
+static jerry_value_t js_lv_roller_create(const jerry_call_info_t* info,
     const jerry_value_t args[],
     const jerry_length_t argc) {
     // 参数数量检查
-    if (argc < 3) {
+    if (argc < 1) {
         return throw_error("Insufficient arguments");
     }
 
-    // 解析参数: obj (lv_obj_t*)
-    jerry_value_t js_obj = args[0];
-    if (!jerry_value_is_object(js_obj)) {
+    // 解析参数: parent (lv_obj_t*)
+    jerry_value_t js_parent = args[0];
+    if (!jerry_value_is_object(js_parent)) {
         return throw_error("Argument 0 must be an object");
     }
     
-    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
-    jerry_value_free(obj_ptr_prop);
+    jerry_value_t parent_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t parent_ptr_val = jerry_object_get(js_parent, parent_ptr_prop);
+    jerry_value_free(parent_ptr_prop);
     
-    if (!jerry_value_is_number(obj_ptr_val)) {
-        jerry_value_free(obj_ptr_val);
+    if (!jerry_value_is_number(parent_ptr_val)) {
+        jerry_value_free(parent_ptr_val);
         return throw_error("Invalid __ptr property");
     }
     
-    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
-    void* obj = (void*)obj_ptr;
-    
-    // 解析参数: value (int32_t)
-    jerry_value_t js_value = args[1];
-    if (!jerry_value_is_number(js_value)) {
-        return throw_error("Argument 1 must be a number");
-    }
-    
-    int32_t value = (int32_t)jerry_value_as_number(js_value);
-    
-    // 解析参数: selector (lv_style_selector_t)
-    jerry_value_t js_selector = args[2];
-    if (!jerry_value_is_number(js_selector)) {
-        return throw_error("Argument 2 must be a number");
-    }
-    
-    uint32_t selector = (uint32_t)jerry_value_as_number(js_selector);
+    uintptr_t parent_ptr = (uintptr_t)jerry_value_as_number(parent_ptr_val);
+    jerry_value_free(parent_ptr_val);
+    void* parent = (void*)parent_ptr;
     
     // 调用底层函数
-    lv_obj_set_style_pad_column(obj, value, selector);
-    return jerry_undefined();
+    lv_obj_t* ret_value = lv_roller_create(parent);
+
+    // 处理返回值
+    // 包装为LVGL对象
+    jerry_value_t js_obj = jerry_object();
+    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls = jerry_string_sz("lv_obj");
+    
+    jerry_object_set(js_obj, jerry_string_sz("__ptr"), ptr);
+    jerry_object_set(js_obj, jerry_string_sz("__class"), cls);
+    
+    jerry_value_free(ptr);
+    jerry_value_free(cls);
+    return js_obj;
 }
 
 
 
 /**
- * lv_obj_set_style_bg_color function
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_obj_set_style_bg_color(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 3) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: obj (lv_obj_t*)
-    jerry_value_t js_obj = args[0];
-    if (!jerry_value_is_object(js_obj)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
-    jerry_value_free(obj_ptr_prop);
-    
-    if (!jerry_value_is_number(obj_ptr_val)) {
-        jerry_value_free(obj_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
-    void* obj = (void*)obj_ptr;
-    
-    // 解析参数: value (lv_color_t)
-    lv_color_t value = parse_lv_color(args[1]);
-
-    // 解析参数: selector (lv_style_selector_t)
-    jerry_value_t js_selector = args[2];
-    if (!jerry_value_is_number(js_selector)) {
-        return throw_error("Argument 2 must be a number");
-    }
-    
-    uint32_t selector = (uint32_t)jerry_value_as_number(js_selector);
-    
-    // 调用底层函数
-    lv_obj_set_style_bg_color(obj, value, selector);
-    return jerry_undefined();
-}
-
-
-
-/**
- * lv_obj_set_style_border_color function
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_obj_set_style_border_color(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 3) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: obj (lv_obj_t*)
-    jerry_value_t js_obj = args[0];
-    if (!jerry_value_is_object(js_obj)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
-    jerry_value_free(obj_ptr_prop);
-    
-    if (!jerry_value_is_number(obj_ptr_val)) {
-        jerry_value_free(obj_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
-    void* obj = (void*)obj_ptr;
-    
-    // 解析参数: value (lv_color_t)
-    lv_color_t value = parse_lv_color(args[1]);
-
-    // 解析参数: selector (lv_style_selector_t)
-    jerry_value_t js_selector = args[2];
-    if (!jerry_value_is_number(js_selector)) {
-        return throw_error("Argument 2 must be a number");
-    }
-    
-    uint32_t selector = (uint32_t)jerry_value_as_number(js_selector);
-    
-    // 调用底层函数
-    lv_obj_set_style_border_color(obj, value, selector);
-    return jerry_undefined();
-}
-
-
-
-/**
- * lv_obj_set_style_border_width function
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_obj_set_style_border_width(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 3) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: obj (lv_obj_t*)
-    jerry_value_t js_obj = args[0];
-    if (!jerry_value_is_object(js_obj)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
-    jerry_value_free(obj_ptr_prop);
-    
-    if (!jerry_value_is_number(obj_ptr_val)) {
-        jerry_value_free(obj_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
-    void* obj = (void*)obj_ptr;
-    
-    // 解析参数: value (int32_t)
-    jerry_value_t js_value = args[1];
-    if (!jerry_value_is_number(js_value)) {
-        return throw_error("Argument 1 must be a number");
-    }
-    
-    int32_t value = (int32_t)jerry_value_as_number(js_value);
-    
-    // 解析参数: selector (lv_style_selector_t)
-    jerry_value_t js_selector = args[2];
-    if (!jerry_value_is_number(js_selector)) {
-        return throw_error("Argument 2 must be a number");
-    }
-    
-    uint32_t selector = (uint32_t)jerry_value_as_number(js_selector);
-    
-    // 调用底层函数
-    lv_obj_set_style_border_width(obj, value, selector);
-    return jerry_undefined();
-}
-
-
-
-/**
- * lv_obj_set_style_text_color function
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_obj_set_style_text_color(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 3) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: obj (lv_obj_t*)
-    jerry_value_t js_obj = args[0];
-    if (!jerry_value_is_object(js_obj)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
-    jerry_value_free(obj_ptr_prop);
-    
-    if (!jerry_value_is_number(obj_ptr_val)) {
-        jerry_value_free(obj_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
-    void* obj = (void*)obj_ptr;
-    
-    // 解析参数: value (lv_color_t)
-    lv_color_t value = parse_lv_color(args[1]);
-
-    // 解析参数: selector (lv_style_selector_t)
-    jerry_value_t js_selector = args[2];
-    if (!jerry_value_is_number(js_selector)) {
-        return throw_error("Argument 2 must be a number");
-    }
-    
-    uint32_t selector = (uint32_t)jerry_value_as_number(js_selector);
-    
-    // 调用底层函数
-    lv_obj_set_style_text_color(obj, value, selector);
-    return jerry_undefined();
-}
-
-
-
-/**
- * lv_obj_set_style_text_font function
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
+ * lv_obj_set_style_text_font function (aliased to lv_obj_set_style_text_font)
  */
 static jerry_value_t js_lv_obj_set_style_text_font(const jerry_call_info_t* info,
     const jerry_value_t args[],
@@ -1244,663 +3018,7 @@ static jerry_value_t js_lv_obj_set_style_text_font(const jerry_call_info_t* info
 
 
 /**
- * lv_obj_set_style_radius function
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_obj_set_style_radius(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 3) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: obj (lv_obj_t*)
-    jerry_value_t js_obj = args[0];
-    if (!jerry_value_is_object(js_obj)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
-    jerry_value_free(obj_ptr_prop);
-    
-    if (!jerry_value_is_number(obj_ptr_val)) {
-        jerry_value_free(obj_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
-    void* obj = (void*)obj_ptr;
-    
-    // 解析参数: value (int32_t)
-    jerry_value_t js_value = args[1];
-    if (!jerry_value_is_number(js_value)) {
-        return throw_error("Argument 1 must be a number");
-    }
-    
-    int32_t value = (int32_t)jerry_value_as_number(js_value);
-    
-    // 解析参数: selector (lv_style_selector_t)
-    jerry_value_t js_selector = args[2];
-    if (!jerry_value_is_number(js_selector)) {
-        return throw_error("Argument 2 must be a number");
-    }
-    
-    uint32_t selector = (uint32_t)jerry_value_as_number(js_selector);
-    
-    // 调用底层函数
-    lv_obj_set_style_radius(obj, value, selector);
-    return jerry_undefined();
-}
-
-
-
-/**
- * lv_obj_set_style_pad_all function
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_obj_set_style_pad_all(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 3) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: obj (lv_obj_t*)
-    jerry_value_t js_obj = args[0];
-    if (!jerry_value_is_object(js_obj)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
-    jerry_value_free(obj_ptr_prop);
-    
-    if (!jerry_value_is_number(obj_ptr_val)) {
-        jerry_value_free(obj_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
-    void* obj = (void*)obj_ptr;
-    
-    // 解析参数: value (int32_t)
-    jerry_value_t js_value = args[1];
-    if (!jerry_value_is_number(js_value)) {
-        return throw_error("Argument 1 must be a number");
-    }
-    
-    int32_t value = (int32_t)jerry_value_as_number(js_value);
-    
-    // 解析参数: selector (lv_style_selector_t)
-    jerry_value_t js_selector = args[2];
-    if (!jerry_value_is_number(js_selector)) {
-        return throw_error("Argument 2 must be a number");
-    }
-    
-    uint32_t selector = (uint32_t)jerry_value_as_number(js_selector);
-    
-    // 调用底层函数
-    lv_obj_set_style_pad_all(obj, value, selector);
-    return jerry_undefined();
-}
-
-
-
-/**
- * Create a base object (a rectangle) pointer to the new object
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_obj_create(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 1) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: parent (lv_obj_t*)
-    jerry_value_t js_parent = args[0];
-    if (!jerry_value_is_object(js_parent)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t parent_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t parent_ptr_val = jerry_object_get(js_parent, parent_ptr_prop);
-    jerry_value_free(parent_ptr_prop);
-    
-    if (!jerry_value_is_number(parent_ptr_val)) {
-        jerry_value_free(parent_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t parent_ptr = (uintptr_t)jerry_value_as_number(parent_ptr_val);
-    jerry_value_free(parent_ptr_val);
-    void* parent = (void*)parent_ptr;
-    
-    // 调用底层函数
-    lv_obj_t* ret_value = lv_obj_create(parent);
-
-    // 处理返回值
-    // 包装为LVGL对象
-    jerry_value_t js_obj = jerry_object();
-    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
-    jerry_value_t cls = jerry_string_sz("lv_obj");
-    
-    jerry_object_set(js_obj, jerry_string_sz("__ptr"), ptr);
-    jerry_object_set(js_obj, jerry_string_sz("__class"), cls);
-    
-    jerry_value_free(ptr);
-    jerry_value_free(cls);
-    return js_obj;
-}
-
-
-
-/**
- * Set one or more flags
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_obj_add_flag(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 2) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: obj (lv_obj_t*)
-    jerry_value_t js_obj = args[0];
-    if (!jerry_value_is_object(js_obj)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
-    jerry_value_free(obj_ptr_prop);
-    
-    if (!jerry_value_is_number(obj_ptr_val)) {
-        jerry_value_free(obj_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
-    void* obj = (void*)obj_ptr;
-    
-    // 解析参数: f (lv_obj_flag_t)
-    jerry_value_t js_f = args[1];
-    if (!jerry_value_is_number(js_f)) {
-        return throw_error("Argument 1 must be a number");
-    }
-    
-    int f = (int)jerry_value_as_number(js_f);
-    
-    // 调用底层函数
-    lv_obj_add_flag(obj, f);
-    return jerry_undefined();
-}
-
-
-
-/**
- * Create an arc object pointer to the created arc
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_arc_create(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 1) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: parent (lv_obj_t*)
-    jerry_value_t js_parent = args[0];
-    if (!jerry_value_is_object(js_parent)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t parent_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t parent_ptr_val = jerry_object_get(js_parent, parent_ptr_prop);
-    jerry_value_free(parent_ptr_prop);
-    
-    if (!jerry_value_is_number(parent_ptr_val)) {
-        jerry_value_free(parent_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t parent_ptr = (uintptr_t)jerry_value_as_number(parent_ptr_val);
-    jerry_value_free(parent_ptr_val);
-    void* parent = (void*)parent_ptr;
-    
-    // 调用底层函数
-    lv_obj_t* ret_value = lv_arc_create(parent);
-
-    // 处理返回值
-    // 包装为LVGL对象
-    jerry_value_t js_obj = jerry_object();
-    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
-    jerry_value_t cls = jerry_string_sz("lv_obj");
-    
-    jerry_object_set(js_obj, jerry_string_sz("__ptr"), ptr);
-    jerry_object_set(js_obj, jerry_string_sz("__class"), cls);
-    
-    jerry_value_free(ptr);
-    jerry_value_free(cls);
-    return js_obj;
-}
-
-
-
-/**
- * Set the start and end angles of the arc background
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_arc_set_bg_angles(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 3) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: obj (lv_obj_t*)
-    jerry_value_t js_obj = args[0];
-    if (!jerry_value_is_object(js_obj)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
-    jerry_value_free(obj_ptr_prop);
-    
-    if (!jerry_value_is_number(obj_ptr_val)) {
-        jerry_value_free(obj_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
-    void* obj = (void*)obj_ptr;
-    
-    // 解析参数: start (lv_value_precise_t)
-    jerry_value_t js_start = args[1];
-    if (!jerry_value_is_number(js_start)) {
-        return throw_error("Argument 1 must be a number");
-    }
-    
-    float start = (float)jerry_value_as_number(js_start);
-    
-    // 解析参数: end (lv_value_precise_t)
-    jerry_value_t js_end = args[2];
-    if (!jerry_value_is_number(js_end)) {
-        return throw_error("Argument 2 must be a number");
-    }
-    
-    float end = (float)jerry_value_as_number(js_end);
-    
-    // 调用底层函数
-    lv_arc_set_bg_angles(obj, start, end);
-    return jerry_undefined();
-}
-
-
-
-/**
- * Set a new value on the arc
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_arc_set_value(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 2) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: obj (lv_obj_t*)
-    jerry_value_t js_obj = args[0];
-    if (!jerry_value_is_object(js_obj)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
-    jerry_value_free(obj_ptr_prop);
-    
-    if (!jerry_value_is_number(obj_ptr_val)) {
-        jerry_value_free(obj_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
-    void* obj = (void*)obj_ptr;
-    
-    // 解析参数: value (int32_t)
-    jerry_value_t js_value = args[1];
-    if (!jerry_value_is_number(js_value)) {
-        return throw_error("Argument 1 must be a number");
-    }
-    
-    int32_t value = (int32_t)jerry_value_as_number(js_value);
-    
-    // 调用底层函数
-    lv_arc_set_value(obj, value);
-    return jerry_undefined();
-}
-
-
-
-/**
- * Set minimum and the maximum values of an arc
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_arc_set_range(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 3) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: obj (lv_obj_t*)
-    jerry_value_t js_obj = args[0];
-    if (!jerry_value_is_object(js_obj)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
-    jerry_value_free(obj_ptr_prop);
-    
-    if (!jerry_value_is_number(obj_ptr_val)) {
-        jerry_value_free(obj_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
-    void* obj = (void*)obj_ptr;
-    
-    // 解析参数: min (int32_t)
-    jerry_value_t js_min = args[1];
-    if (!jerry_value_is_number(js_min)) {
-        return throw_error("Argument 1 must be a number");
-    }
-    
-    int32_t min = (int32_t)jerry_value_as_number(js_min);
-    
-    // 解析参数: max (int32_t)
-    jerry_value_t js_max = args[2];
-    if (!jerry_value_is_number(js_max)) {
-        return throw_error("Argument 2 must be a number");
-    }
-    
-    int32_t max = (int32_t)jerry_value_as_number(js_max);
-    
-    // 调用底层函数
-    lv_arc_set_range(obj, min, max);
-    return jerry_undefined();
-}
-
-
-
-/**
- * Create a label object pointer to the created button
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_label_create(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 1) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: parent (lv_obj_t*)
-    jerry_value_t js_parent = args[0];
-    if (!jerry_value_is_object(js_parent)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t parent_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t parent_ptr_val = jerry_object_get(js_parent, parent_ptr_prop);
-    jerry_value_free(parent_ptr_prop);
-    
-    if (!jerry_value_is_number(parent_ptr_val)) {
-        jerry_value_free(parent_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t parent_ptr = (uintptr_t)jerry_value_as_number(parent_ptr_val);
-    jerry_value_free(parent_ptr_val);
-    void* parent = (void*)parent_ptr;
-    
-    // 调用底层函数
-    lv_obj_t* ret_value = lv_label_create(parent);
-
-    // 处理返回值
-    // 包装为LVGL对象
-    jerry_value_t js_obj = jerry_object();
-    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
-    jerry_value_t cls = jerry_string_sz("lv_obj");
-    
-    jerry_object_set(js_obj, jerry_string_sz("__ptr"), ptr);
-    jerry_object_set(js_obj, jerry_string_sz("__class"), cls);
-    
-    jerry_value_free(ptr);
-    jerry_value_free(cls);
-    return js_obj;
-}
-
-
-
-/**
- * Set a new text for a label. Memory will be allocated to store the text by the label.
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_label_set_text(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 2) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: obj (lv_obj_t*)
-    jerry_value_t js_obj = args[0];
-    if (!jerry_value_is_object(js_obj)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
-    jerry_value_free(obj_ptr_prop);
-    
-    if (!jerry_value_is_number(obj_ptr_val)) {
-        jerry_value_free(obj_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
-    void* obj = (void*)obj_ptr;
-    
-    // 解析参数: text (const char*)
-    jerry_value_t js_text = args[1];
-    if (!jerry_value_is_string(js_text)) {
-        return throw_error("Argument 1 must be a string");
-    }
-    
-    jerry_size_t text_len = jerry_string_size(js_text, JERRY_ENCODING_UTF8);
-    char* text = (char*)malloc(text_len + 1);
-    if (!text) {
-        return throw_error("Out of memory");
-    }
-    jerry_string_to_buffer(js_text, JERRY_ENCODING_UTF8, (jerry_char_t*)text, text_len);
-    text[text_len] = '\\0';
-
-    // 调用底层函数
-    lv_label_set_text(obj, text);
-    free(text);
-    return jerry_undefined();
-}
-
-
-
-/**
- * Set the behavior of the label with text longer than the object size
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_label_set_long_mode(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 2) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: obj (lv_obj_t*)
-    jerry_value_t js_obj = args[0];
-    if (!jerry_value_is_object(js_obj)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
-    jerry_value_free(obj_ptr_prop);
-    
-    if (!jerry_value_is_number(obj_ptr_val)) {
-        jerry_value_free(obj_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
-    void* obj = (void*)obj_ptr;
-    
-    // 解析参数: long_mode (lv_label_long_mode_t)
-    jerry_value_t js_long_mode = args[1];
-    if (!jerry_value_is_number(js_long_mode)) {
-        return throw_error("Argument 1 must be a number");
-    }
-    
-    lv_label_long_mode_t long_mode = (lv_label_long_mode_t)jerry_value_as_number(js_long_mode);
-    
-    // 调用底层函数
-    lv_label_set_long_mode(obj, long_mode);
-    return jerry_undefined();
-}
-
-
-
-/**
- * Enable the recoloring by in-line commands
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_label_set_recolor(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 2) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: obj (lv_obj_t*)
-    jerry_value_t js_obj = args[0];
-    if (!jerry_value_is_object(js_obj)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
-    jerry_value_free(obj_ptr_prop);
-    
-    if (!jerry_value_is_number(obj_ptr_val)) {
-        jerry_value_free(obj_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
-    void* obj = (void*)obj_ptr;
-    
-    // 解析参数: en (bool)
-    jerry_value_t js_en = args[1];
-    if (!jerry_value_is_number(js_en)) {
-        return throw_error("Argument 1 must be a number");
-    }
-    
-    bool en = (bool)jerry_value_as_number(js_en);
-    
-    // 调用底层函数
-    lv_label_set_recolor(obj, en);
-    return jerry_undefined();
-}
-
-
-
-/**
  * Create a bar object pointer to the created bar
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
  */
 static jerry_value_t js_lv_bar_create(const jerry_call_info_t* info,
     const jerry_value_t args[],
@@ -1949,447 +3067,7 @@ static jerry_value_t js_lv_bar_create(const jerry_call_info_t* info,
 
 
 /**
- * Set a new value on the bar
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_bar_set_value(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 3) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: obj (lv_obj_t*)
-    jerry_value_t js_obj = args[0];
-    if (!jerry_value_is_object(js_obj)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
-    jerry_value_free(obj_ptr_prop);
-    
-    if (!jerry_value_is_number(obj_ptr_val)) {
-        jerry_value_free(obj_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
-    void* obj = (void*)obj_ptr;
-    
-    // 解析参数: value (int32_t)
-    jerry_value_t js_value = args[1];
-    if (!jerry_value_is_number(js_value)) {
-        return throw_error("Argument 1 must be a number");
-    }
-    
-    int32_t value = (int32_t)jerry_value_as_number(js_value);
-    
-    // 解析参数: anim (lv_anim_enable_t)
-    jerry_value_t js_anim = args[2];
-    if (!jerry_value_is_boolean(js_anim)) {
-        return throw_error("Argument 2 must be a boolean");
-    }
-    
-    bool anim = jerry_value_to_boolean(js_anim);
-    
-    // 调用底层函数
-    lv_bar_set_value(obj, value, anim);
-    return jerry_undefined();
-}
-
-
-
-/**
- * Set minimum and the maximum values of a bar If min is greater than max, the drawing direction becomes to the opposite direction.
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_bar_set_range(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 3) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: obj (lv_obj_t*)
-    jerry_value_t js_obj = args[0];
-    if (!jerry_value_is_object(js_obj)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
-    jerry_value_free(obj_ptr_prop);
-    
-    if (!jerry_value_is_number(obj_ptr_val)) {
-        jerry_value_free(obj_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
-    void* obj = (void*)obj_ptr;
-    
-    // 解析参数: min (int32_t)
-    jerry_value_t js_min = args[1];
-    if (!jerry_value_is_number(js_min)) {
-        return throw_error("Argument 1 must be a number");
-    }
-    
-    int32_t min = (int32_t)jerry_value_as_number(js_min);
-    
-    // 解析参数: max (int32_t)
-    jerry_value_t js_max = args[2];
-    if (!jerry_value_is_number(js_max)) {
-        return throw_error("Argument 2 must be a number");
-    }
-    
-    int32_t max = (int32_t)jerry_value_as_number(js_max);
-    
-    // 调用底层函数
-    lv_bar_set_range(obj, min, max);
-    return jerry_undefined();
-}
-
-
-
-/**
- * Create a chart object pointer to the created chart
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_chart_create(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 1) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: parent (lv_obj_t*)
-    jerry_value_t js_parent = args[0];
-    if (!jerry_value_is_object(js_parent)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t parent_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t parent_ptr_val = jerry_object_get(js_parent, parent_ptr_prop);
-    jerry_value_free(parent_ptr_prop);
-    
-    if (!jerry_value_is_number(parent_ptr_val)) {
-        jerry_value_free(parent_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t parent_ptr = (uintptr_t)jerry_value_as_number(parent_ptr_val);
-    jerry_value_free(parent_ptr_val);
-    void* parent = (void*)parent_ptr;
-    
-    // 调用底层函数
-    lv_obj_t* ret_value = lv_chart_create(parent);
-
-    // 处理返回值
-    // 包装为LVGL对象
-    jerry_value_t js_obj = jerry_object();
-    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
-    jerry_value_t cls = jerry_string_sz("lv_obj");
-    
-    jerry_object_set(js_obj, jerry_string_sz("__ptr"), ptr);
-    jerry_object_set(js_obj, jerry_string_sz("__class"), cls);
-    
-    jerry_value_free(ptr);
-    jerry_value_free(cls);
-    return js_obj;
-}
-
-
-
-/**
- * Set a new type for a chart
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_chart_set_type(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 2) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: obj (lv_obj_t*)
-    jerry_value_t js_obj = args[0];
-    if (!jerry_value_is_object(js_obj)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
-    jerry_value_free(obj_ptr_prop);
-    
-    if (!jerry_value_is_number(obj_ptr_val)) {
-        jerry_value_free(obj_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
-    void* obj = (void*)obj_ptr;
-    
-    // 解析参数: type (lv_chart_type_t)
-    jerry_value_t js_type = args[1];
-    if (!jerry_value_is_number(js_type)) {
-        return throw_error("Argument 1 must be a number");
-    }
-    
-    int type = (int)jerry_value_as_number(js_type);
-    
-    // 调用底层函数
-    lv_chart_set_type(obj, type);
-    return jerry_undefined();
-}
-
-
-
-/**
- * Set the number of points on a data line on a chart
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_chart_set_point_count(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 2) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: obj (lv_obj_t*)
-    jerry_value_t js_obj = args[0];
-    if (!jerry_value_is_object(js_obj)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
-    jerry_value_free(obj_ptr_prop);
-    
-    if (!jerry_value_is_number(obj_ptr_val)) {
-        jerry_value_free(obj_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
-    void* obj = (void*)obj_ptr;
-    
-    // 解析参数: cnt (uint32_t)
-    jerry_value_t js_cnt = args[1];
-    if (!jerry_value_is_number(js_cnt)) {
-        return throw_error("Argument 1 must be a number");
-    }
-    
-    uint32_t cnt = (uint32_t)jerry_value_as_number(js_cnt);
-    
-    // 调用底层函数
-    lv_chart_set_point_count(obj, cnt);
-    return jerry_undefined();
-}
-
-
-
-/**
- * Create a check box object pointer to the created check box
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_checkbox_create(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 1) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: parent (lv_obj_t*)
-    jerry_value_t js_parent = args[0];
-    if (!jerry_value_is_object(js_parent)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t parent_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t parent_ptr_val = jerry_object_get(js_parent, parent_ptr_prop);
-    jerry_value_free(parent_ptr_prop);
-    
-    if (!jerry_value_is_number(parent_ptr_val)) {
-        jerry_value_free(parent_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t parent_ptr = (uintptr_t)jerry_value_as_number(parent_ptr_val);
-    jerry_value_free(parent_ptr_val);
-    void* parent = (void*)parent_ptr;
-    
-    // 调用底层函数
-    lv_obj_t* ret_value = lv_checkbox_create(parent);
-
-    // 处理返回值
-    // 包装为LVGL对象
-    jerry_value_t js_obj = jerry_object();
-    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
-    jerry_value_t cls = jerry_string_sz("lv_obj");
-    
-    jerry_object_set(js_obj, jerry_string_sz("__ptr"), ptr);
-    jerry_object_set(js_obj, jerry_string_sz("__class"), cls);
-    
-    jerry_value_free(ptr);
-    jerry_value_free(cls);
-    return js_obj;
-}
-
-
-
-/**
- * Set the text of a check box. txt will be copied and may be deallocated after this function returns.
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_checkbox_set_text(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 2) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: obj (lv_obj_t*)
-    jerry_value_t js_obj = args[0];
-    if (!jerry_value_is_object(js_obj)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
-    jerry_value_free(obj_ptr_prop);
-    
-    if (!jerry_value_is_number(obj_ptr_val)) {
-        jerry_value_free(obj_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
-    void* obj = (void*)obj_ptr;
-    
-    // 解析参数: txt (const char*)
-    jerry_value_t js_txt = args[1];
-    if (!jerry_value_is_string(js_txt)) {
-        return throw_error("Argument 1 must be a string");
-    }
-    
-    jerry_size_t txt_len = jerry_string_size(js_txt, JERRY_ENCODING_UTF8);
-    char* txt = (char*)malloc(txt_len + 1);
-    if (!txt) {
-        return throw_error("Out of memory");
-    }
-    jerry_string_to_buffer(js_txt, JERRY_ENCODING_UTF8, (jerry_char_t*)txt, txt_len);
-    txt[txt_len] = '\\0';
-
-    // 调用底层函数
-    lv_checkbox_set_text(obj, txt);
-    free(txt);
-    return jerry_undefined();
-}
-
-
-
-/**
- * Create a drop-down list object pointer to the created drop-down list
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_dropdown_create(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 1) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: parent (lv_obj_t*)
-    jerry_value_t js_parent = args[0];
-    if (!jerry_value_is_object(js_parent)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t parent_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t parent_ptr_val = jerry_object_get(js_parent, parent_ptr_prop);
-    jerry_value_free(parent_ptr_prop);
-    
-    if (!jerry_value_is_number(parent_ptr_val)) {
-        jerry_value_free(parent_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t parent_ptr = (uintptr_t)jerry_value_as_number(parent_ptr_val);
-    jerry_value_free(parent_ptr_val);
-    void* parent = (void*)parent_ptr;
-    
-    // 调用底层函数
-    lv_obj_t* ret_value = lv_dropdown_create(parent);
-
-    // 处理返回值
-    // 包装为LVGL对象
-    jerry_value_t js_obj = jerry_object();
-    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
-    jerry_value_t cls = jerry_string_sz("lv_obj");
-    
-    jerry_object_set(js_obj, jerry_string_sz("__ptr"), ptr);
-    jerry_object_set(js_obj, jerry_string_sz("__class"), cls);
-    
-    jerry_value_free(ptr);
-    jerry_value_free(cls);
-    return js_obj;
-}
-
-
-
-/**
  * Set the options in a drop-down list from a string. The options will be copied and saved in the object so the options can be destroyed after calling this function
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
  */
 static jerry_value_t js_lv_dropdown_set_options(const jerry_call_info_t* info,
     const jerry_value_t args[],
@@ -2430,7 +3108,7 @@ static jerry_value_t js_lv_dropdown_set_options(const jerry_call_info_t* info,
         return throw_error("Out of memory");
     }
     jerry_string_to_buffer(js_options, JERRY_ENCODING_UTF8, (jerry_char_t*)options, options_len);
-    options[options_len] = '\\0';
+    options[options_len] = '\0';
 
     // 调用底层函数
     lv_dropdown_set_options(obj, options);
@@ -2441,72 +3119,9 @@ static jerry_value_t js_lv_dropdown_set_options(const jerry_call_info_t* info,
 
 
 /**
- * Set the selected option
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
+ * Get the value of the main knob of a slider the value of the main knob of the slider
  */
-static jerry_value_t js_lv_dropdown_set_selected(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 3) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: obj (lv_obj_t*)
-    jerry_value_t js_obj = args[0];
-    if (!jerry_value_is_object(js_obj)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
-    jerry_value_free(obj_ptr_prop);
-    
-    if (!jerry_value_is_number(obj_ptr_val)) {
-        jerry_value_free(obj_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
-    void* obj = (void*)obj_ptr;
-    
-    // 解析参数: sel_opt (uint32_t)
-    jerry_value_t js_sel_opt = args[1];
-    if (!jerry_value_is_number(js_sel_opt)) {
-        return throw_error("Argument 1 must be a number");
-    }
-    
-    uint32_t sel_opt = (uint32_t)jerry_value_as_number(js_sel_opt);
-    
-    // 解析参数: anim (lv_anim_enable_t)
-    jerry_value_t js_anim = args[2];
-    if (!jerry_value_is_boolean(js_anim)) {
-        return throw_error("Argument 2 must be a boolean");
-    }
-    
-    bool anim = jerry_value_to_boolean(js_anim);
-    
-    // 调用底层函数
-    lv_dropdown_set_selected(obj, sel_opt, anim);
-    return jerry_undefined();
-}
-
-
-
-/**
- * Get the index of the selected option index of the selected option (0 ... number of option - 1);
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_dropdown_get_selected(const jerry_call_info_t* info,
+static jerry_value_t js_lv_slider_get_value(const jerry_call_info_t* info,
     const jerry_value_t args[],
     const jerry_length_t argc) {
     // 参数数量检查
@@ -2534,7 +3149,7 @@ static jerry_value_t js_lv_dropdown_get_selected(const jerry_call_info_t* info,
     void* obj = (void*)obj_ptr;
     
     // 调用底层函数
-    uint32_t ret_value = lv_dropdown_get_selected(obj);
+    int32_t ret_value = lv_slider_get_value(obj);
 
     // 处理返回值
     return jerry_number(ret_value);
@@ -2543,162 +3158,105 @@ static jerry_value_t js_lv_dropdown_get_selected(const jerry_call_info_t* info,
 
 
 /**
- * Create an empty message box the created message box
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
+ * Set the number of columns
  */
-static jerry_value_t js_lv_msgbox_create(const jerry_call_info_t* info,
+static jerry_value_t js_lv_table_set_col_cnt(const jerry_call_info_t* info,
     const jerry_value_t args[],
     const jerry_length_t argc) {
     // 参数数量检查
-    if (argc < 1) {
+    if (argc < 2) {
         return throw_error("Insufficient arguments");
     }
 
-    // 解析参数: parent (lv_obj_t*)
-    jerry_value_t js_parent = args[0];
-    if (!jerry_value_is_object(js_parent)) {
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
         return throw_error("Argument 0 must be an object");
     }
     
-    jerry_value_t parent_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t parent_ptr_val = jerry_object_get(js_parent, parent_ptr_prop);
-    jerry_value_free(parent_ptr_prop);
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
     
-    if (!jerry_value_is_number(parent_ptr_val)) {
-        jerry_value_free(parent_ptr_val);
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
         return throw_error("Invalid __ptr property");
     }
     
-    uintptr_t parent_ptr = (uintptr_t)jerry_value_as_number(parent_ptr_val);
-    jerry_value_free(parent_ptr_val);
-    void* parent = (void*)parent_ptr;
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: col_cnt (uint32_t)
+    jerry_value_t js_col_cnt = args[1];
+    if (!jerry_value_is_number(js_col_cnt)) {
+        return throw_error("Argument 1 must be a number");
+    }
+    
+    uint32_t col_cnt = (uint32_t)jerry_value_as_number(js_col_cnt);
     
     // 调用底层函数
-    lv_obj_t* ret_value = lv_msgbox_create(parent);
-
-    // 处理返回值
-    // 包装为LVGL对象
-    jerry_value_t js_obj = jerry_object();
-    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
-    jerry_value_t cls = jerry_string_sz("lv_obj");
-    
-    jerry_object_set(js_obj, jerry_string_sz("__ptr"), ptr);
-    jerry_object_set(js_obj, jerry_string_sz("__class"), cls);
-    
-    jerry_value_free(ptr);
-    jerry_value_free(cls);
-    return js_obj;
-}
-
-
-
-/**
- * Close a message box
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_msgbox_close(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 1) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: mbox (lv_obj_t*)
-    jerry_value_t js_mbox = args[0];
-    if (!jerry_value_is_object(js_mbox)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t mbox_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t mbox_ptr_val = jerry_object_get(js_mbox, mbox_ptr_prop);
-    jerry_value_free(mbox_ptr_prop);
-    
-    if (!jerry_value_is_number(mbox_ptr_val)) {
-        jerry_value_free(mbox_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t mbox_ptr = (uintptr_t)jerry_value_as_number(mbox_ptr_val);
-    jerry_value_free(mbox_ptr_val);
-    void* mbox = (void*)mbox_ptr;
-    
-    // 调用底层函数
-    lv_msgbox_close(mbox);
+    lv_table_set_column_count(obj, col_cnt);
     return jerry_undefined();
 }
 
 
 
 /**
- * Create a roller object pointer to the created roller
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
+ * lv_obj_set_style_border_width function (aliased to lv_obj_set_style_border_width)
  */
-static jerry_value_t js_lv_roller_create(const jerry_call_info_t* info,
+static jerry_value_t js_lv_obj_set_style_border_width(const jerry_call_info_t* info,
     const jerry_value_t args[],
     const jerry_length_t argc) {
     // 参数数量检查
-    if (argc < 1) {
+    if (argc < 3) {
         return throw_error("Insufficient arguments");
     }
 
-    // 解析参数: parent (lv_obj_t*)
-    jerry_value_t js_parent = args[0];
-    if (!jerry_value_is_object(js_parent)) {
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
         return throw_error("Argument 0 must be an object");
     }
     
-    jerry_value_t parent_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t parent_ptr_val = jerry_object_get(js_parent, parent_ptr_prop);
-    jerry_value_free(parent_ptr_prop);
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
     
-    if (!jerry_value_is_number(parent_ptr_val)) {
-        jerry_value_free(parent_ptr_val);
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
         return throw_error("Invalid __ptr property");
     }
     
-    uintptr_t parent_ptr = (uintptr_t)jerry_value_as_number(parent_ptr_val);
-    jerry_value_free(parent_ptr_val);
-    void* parent = (void*)parent_ptr;
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: value (int32_t)
+    jerry_value_t js_value = args[1];
+    if (!jerry_value_is_number(js_value)) {
+        return throw_error("Argument 1 must be a number");
+    }
+    
+    int32_t value = (int32_t)jerry_value_as_number(js_value);
+    
+    // 解析参数: selector (lv_style_selector_t)
+    jerry_value_t js_selector = args[2];
+    if (!jerry_value_is_number(js_selector)) {
+        return throw_error("Argument 2 must be a number");
+    }
+    
+    uint32_t selector = (uint32_t)jerry_value_as_number(js_selector);
     
     // 调用底层函数
-    lv_obj_t* ret_value = lv_roller_create(parent);
-
-    // 处理返回值
-    // 包装为LVGL对象
-    jerry_value_t js_obj = jerry_object();
-    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
-    jerry_value_t cls = jerry_string_sz("lv_obj");
-    
-    jerry_object_set(js_obj, jerry_string_sz("__ptr"), ptr);
-    jerry_object_set(js_obj, jerry_string_sz("__class"), cls);
-    
-    jerry_value_free(ptr);
-    jerry_value_free(cls);
-    return js_obj;
+    lv_obj_set_style_border_width(obj, value, selector);
+    return jerry_undefined();
 }
 
 
 
 /**
  * Set the options on a roller
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
  */
 static jerry_value_t js_lv_roller_set_options(const jerry_call_info_t* info,
     const jerry_value_t args[],
@@ -2739,7 +3297,7 @@ static jerry_value_t js_lv_roller_set_options(const jerry_call_info_t* info,
         return throw_error("Out of memory");
     }
     jerry_string_to_buffer(js_options, JERRY_ENCODING_UTF8, (jerry_char_t*)options, options_len);
-    options[options_len] = '\\0';
+    options[options_len] = '\0';
 
     // 解析参数: mode (lv_roller_mode_t)
     jerry_value_t js_mode = args[2];
@@ -2758,509 +3316,7 @@ static jerry_value_t js_lv_roller_set_options(const jerry_call_info_t* info,
 
 
 /**
- * Set the selected option
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_roller_set_selected(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 3) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: obj (lv_obj_t*)
-    jerry_value_t js_obj = args[0];
-    if (!jerry_value_is_object(js_obj)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
-    jerry_value_free(obj_ptr_prop);
-    
-    if (!jerry_value_is_number(obj_ptr_val)) {
-        jerry_value_free(obj_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
-    void* obj = (void*)obj_ptr;
-    
-    // 解析参数: sel_opt (uint32_t)
-    jerry_value_t js_sel_opt = args[1];
-    if (!jerry_value_is_number(js_sel_opt)) {
-        return throw_error("Argument 1 must be a number");
-    }
-    
-    uint32_t sel_opt = (uint32_t)jerry_value_as_number(js_sel_opt);
-    
-    // 解析参数: anim (lv_anim_enable_t)
-    jerry_value_t js_anim = args[2];
-    if (!jerry_value_is_boolean(js_anim)) {
-        return throw_error("Argument 2 must be a boolean");
-    }
-    
-    bool anim = jerry_value_to_boolean(js_anim);
-    
-    // 调用底层函数
-    lv_roller_set_selected(obj, sel_opt, anim);
-    return jerry_undefined();
-}
-
-
-
-/**
- * Create a slider object pointer to the created slider
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_slider_create(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 1) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: parent (lv_obj_t*)
-    jerry_value_t js_parent = args[0];
-    if (!jerry_value_is_object(js_parent)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t parent_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t parent_ptr_val = jerry_object_get(js_parent, parent_ptr_prop);
-    jerry_value_free(parent_ptr_prop);
-    
-    if (!jerry_value_is_number(parent_ptr_val)) {
-        jerry_value_free(parent_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t parent_ptr = (uintptr_t)jerry_value_as_number(parent_ptr_val);
-    jerry_value_free(parent_ptr_val);
-    void* parent = (void*)parent_ptr;
-    
-    // 调用底层函数
-    lv_obj_t* ret_value = lv_slider_create(parent);
-
-    // 处理返回值
-    // 包装为LVGL对象
-    jerry_value_t js_obj = jerry_object();
-    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
-    jerry_value_t cls = jerry_string_sz("lv_obj");
-    
-    jerry_object_set(js_obj, jerry_string_sz("__ptr"), ptr);
-    jerry_object_set(js_obj, jerry_string_sz("__class"), cls);
-    
-    jerry_value_free(ptr);
-    jerry_value_free(cls);
-    return js_obj;
-}
-
-
-
-/**
- * Set a new value on the slider
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_slider_set_value(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 3) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: obj (lv_obj_t*)
-    jerry_value_t js_obj = args[0];
-    if (!jerry_value_is_object(js_obj)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
-    jerry_value_free(obj_ptr_prop);
-    
-    if (!jerry_value_is_number(obj_ptr_val)) {
-        jerry_value_free(obj_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
-    void* obj = (void*)obj_ptr;
-    
-    // 解析参数: value (int32_t)
-    jerry_value_t js_value = args[1];
-    if (!jerry_value_is_number(js_value)) {
-        return throw_error("Argument 1 must be a number");
-    }
-    
-    int32_t value = (int32_t)jerry_value_as_number(js_value);
-    
-    // 解析参数: anim (lv_anim_enable_t)
-    jerry_value_t js_anim = args[2];
-    if (!jerry_value_is_boolean(js_anim)) {
-        return throw_error("Argument 2 must be a boolean");
-    }
-    
-    bool anim = jerry_value_to_boolean(js_anim);
-    
-    // 调用底层函数
-    lv_slider_set_value(obj, value, anim);
-    return jerry_undefined();
-}
-
-
-
-/**
- * Set minimum and the maximum values of a bar
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_slider_set_range(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 3) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: obj (lv_obj_t*)
-    jerry_value_t js_obj = args[0];
-    if (!jerry_value_is_object(js_obj)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
-    jerry_value_free(obj_ptr_prop);
-    
-    if (!jerry_value_is_number(obj_ptr_val)) {
-        jerry_value_free(obj_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
-    void* obj = (void*)obj_ptr;
-    
-    // 解析参数: min (int32_t)
-    jerry_value_t js_min = args[1];
-    if (!jerry_value_is_number(js_min)) {
-        return throw_error("Argument 1 must be a number");
-    }
-    
-    int32_t min = (int32_t)jerry_value_as_number(js_min);
-    
-    // 解析参数: max (int32_t)
-    jerry_value_t js_max = args[2];
-    if (!jerry_value_is_number(js_max)) {
-        return throw_error("Argument 2 must be a number");
-    }
-    
-    int32_t max = (int32_t)jerry_value_as_number(js_max);
-    
-    // 调用底层函数
-    lv_slider_set_range(obj, min, max);
-    return jerry_undefined();
-}
-
-
-
-/**
- * Get the value of the main knob of a slider the value of the main knob of the slider
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_slider_get_value(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 1) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: obj (const lv_obj_t*)
-    jerry_value_t js_obj = args[0];
-    if (!jerry_value_is_object(js_obj)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
-    jerry_value_free(obj_ptr_prop);
-    
-    if (!jerry_value_is_number(obj_ptr_val)) {
-        jerry_value_free(obj_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
-    void* obj = (void*)obj_ptr;
-    
-    // 调用底层函数
-    int32_t ret_value = lv_slider_get_value(obj);
-
-    // 处理返回值
-    return jerry_number(ret_value);
-}
-
-
-
-/**
- * Create a text area object pointer to the created text area
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_textarea_create(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 1) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: parent (lv_obj_t*)
-    jerry_value_t js_parent = args[0];
-    if (!jerry_value_is_object(js_parent)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t parent_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t parent_ptr_val = jerry_object_get(js_parent, parent_ptr_prop);
-    jerry_value_free(parent_ptr_prop);
-    
-    if (!jerry_value_is_number(parent_ptr_val)) {
-        jerry_value_free(parent_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t parent_ptr = (uintptr_t)jerry_value_as_number(parent_ptr_val);
-    jerry_value_free(parent_ptr_val);
-    void* parent = (void*)parent_ptr;
-    
-    // 调用底层函数
-    lv_obj_t* ret_value = lv_textarea_create(parent);
-
-    // 处理返回值
-    // 包装为LVGL对象
-    jerry_value_t js_obj = jerry_object();
-    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
-    jerry_value_t cls = jerry_string_sz("lv_obj");
-    
-    jerry_object_set(js_obj, jerry_string_sz("__ptr"), ptr);
-    jerry_object_set(js_obj, jerry_string_sz("__class"), cls);
-    
-    jerry_value_free(ptr);
-    jerry_value_free(cls);
-    return js_obj;
-}
-
-
-
-/**
- * Insert a text to the current cursor position
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_textarea_add_text(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 2) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: obj (lv_obj_t*)
-    jerry_value_t js_obj = args[0];
-    if (!jerry_value_is_object(js_obj)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
-    jerry_value_free(obj_ptr_prop);
-    
-    if (!jerry_value_is_number(obj_ptr_val)) {
-        jerry_value_free(obj_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
-    void* obj = (void*)obj_ptr;
-    
-    // 解析参数: txt (const char*)
-    jerry_value_t js_txt = args[1];
-    if (!jerry_value_is_string(js_txt)) {
-        return throw_error("Argument 1 must be a string");
-    }
-    
-    jerry_size_t txt_len = jerry_string_size(js_txt, JERRY_ENCODING_UTF8);
-    char* txt = (char*)malloc(txt_len + 1);
-    if (!txt) {
-        return throw_error("Out of memory");
-    }
-    jerry_string_to_buffer(js_txt, JERRY_ENCODING_UTF8, (jerry_char_t*)txt, txt_len);
-    txt[txt_len] = '\\0';
-
-    // 调用底层函数
-    lv_textarea_add_text(obj, txt);
-    free(txt);
-    return jerry_undefined();
-}
-
-
-
-/**
- * Set the text of a text area
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_textarea_set_text(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 2) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: obj (lv_obj_t*)
-    jerry_value_t js_obj = args[0];
-    if (!jerry_value_is_object(js_obj)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
-    jerry_value_free(obj_ptr_prop);
-    
-    if (!jerry_value_is_number(obj_ptr_val)) {
-        jerry_value_free(obj_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
-    void* obj = (void*)obj_ptr;
-    
-    // 解析参数: txt (const char*)
-    jerry_value_t js_txt = args[1];
-    if (!jerry_value_is_string(js_txt)) {
-        return throw_error("Argument 1 must be a string");
-    }
-    
-    jerry_size_t txt_len = jerry_string_size(js_txt, JERRY_ENCODING_UTF8);
-    char* txt = (char*)malloc(txt_len + 1);
-    if (!txt) {
-        return throw_error("Out of memory");
-    }
-    jerry_string_to_buffer(js_txt, JERRY_ENCODING_UTF8, (jerry_char_t*)txt, txt_len);
-    txt[txt_len] = '\\0';
-
-    // 调用底层函数
-    lv_textarea_set_text(obj, txt);
-    free(txt);
-    return jerry_undefined();
-}
-
-
-
-/**
- * Set the placeholder text of a text area
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
- */
-static jerry_value_t js_lv_textarea_set_placeholder_text(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 参数数量检查
-    if (argc < 2) {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: obj (lv_obj_t*)
-    jerry_value_t js_obj = args[0];
-    if (!jerry_value_is_object(js_obj)) {
-        return throw_error("Argument 0 must be an object");
-    }
-    
-    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
-    jerry_value_free(obj_ptr_prop);
-    
-    if (!jerry_value_is_number(obj_ptr_val)) {
-        jerry_value_free(obj_ptr_val);
-        return throw_error("Invalid __ptr property");
-    }
-    
-    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
-    void* obj = (void*)obj_ptr;
-    
-    // 解析参数: txt (const char*)
-    jerry_value_t js_txt = args[1];
-    if (!jerry_value_is_string(js_txt)) {
-        return throw_error("Argument 1 must be a string");
-    }
-    
-    jerry_size_t txt_len = jerry_string_size(js_txt, JERRY_ENCODING_UTF8);
-    char* txt = (char*)malloc(txt_len + 1);
-    if (!txt) {
-        return throw_error("Out of memory");
-    }
-    jerry_string_to_buffer(js_txt, JERRY_ENCODING_UTF8, (jerry_char_t*)txt, txt_len);
-    txt[txt_len] = '\\0';
-
-    // 调用底层函数
-    lv_textarea_set_placeholder_text(obj, txt);
-    free(txt);
-    return jerry_undefined();
-}
-
-
-
-/**
  * Create a switch object pointer to the created switch
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
  */
 static jerry_value_t js_lv_switch_create(const jerry_call_info_t* info,
     const jerry_value_t args[],
@@ -3309,14 +3365,187 @@ static jerry_value_t js_lv_switch_create(const jerry_call_info_t* info,
 
 
 /**
- * Create a table object pointer to the created table
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
+ * Set the width of an object possible values are: pixel simple set the size accordingly LV_SIZE_CONTENT set the size to involve all children in the given direction lv_pct(x) to set size in percentage of the parent's content area size (the size without paddings). x should be in [0..1000]% range
  */
-static jerry_value_t js_lv_table_create(const jerry_call_info_t* info,
+static jerry_value_t js_lv_obj_set_width(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: w (int32_t)
+    jerry_value_t js_w = args[1];
+    if (!jerry_value_is_number(js_w)) {
+        return throw_error("Argument 1 must be a number");
+    }
+    
+    int32_t w = (int32_t)jerry_value_as_number(js_w);
+    
+    // 调用底层函数
+    lv_obj_set_width(obj, w);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Get the active screen of the default display pointer to the active screen
+ */
+static jerry_value_t js_lv_scr_act(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 调用底层函数
+    lv_obj_t* ret_value = lv_screen_active();
+
+    // 处理返回值
+    // 包装为LVGL对象
+    jerry_value_t js_obj = jerry_object();
+    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls = jerry_string_sz("lv_obj");
+    
+    jerry_object_set(js_obj, jerry_string_sz("__ptr"), ptr);
+    jerry_object_set(js_obj, jerry_string_sz("__class"), cls);
+    
+    jerry_value_free(ptr);
+    jerry_value_free(cls);
+    return js_obj;
+}
+
+
+
+/**
+ * Set a new type for a chart
+ */
+static jerry_value_t js_lv_chart_set_type(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: type (lv_chart_type_t)
+    jerry_value_t js_type = args[1];
+    if (!jerry_value_is_number(js_type)) {
+        return throw_error("Argument 1 must be a number");
+    }
+    
+    int type = (int)jerry_value_as_number(js_type);
+    
+    // 调用底层函数
+    lv_chart_set_type(obj, type);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Align an object to the center on its parent. if the parent size changes obj needs to be aligned manually again
+ */
+static jerry_value_t js_lv_obj_center(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 调用底层函数
+    lv_obj_center(obj);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Delay for the given milliseconds. By default it's a blocking delay, but with :ref:`lv_delay_set_cb()` a custom delay function can be set too
+ */
+static jerry_value_t js_lv_delay_ms(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: ms (uint32_t)
+    jerry_value_t js_ms = args[0];
+    if (!jerry_value_is_number(js_ms)) {
+        return throw_error("Argument 0 must be a number");
+    }
+    
+    uint32_t ms = (uint32_t)jerry_value_as_number(js_ms);
+    
+    // 调用底层函数
+    lv_delay_ms(ms);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Create an image object pointer to the created image
+ */
+static jerry_value_t js_lv_img_create(const jerry_call_info_t* info,
     const jerry_value_t args[],
     const jerry_length_t argc) {
     // 参数数量检查
@@ -3344,7 +3573,7 @@ static jerry_value_t js_lv_table_create(const jerry_call_info_t* info,
     void* parent = (void*)parent_ptr;
     
     // 调用底层函数
-    lv_obj_t* ret_value = lv_table_create(parent);
+    lv_obj_t* ret_value = lv_image_create(parent);
 
     // 处理返回值
     // 包装为LVGL对象
@@ -3363,18 +3592,13 @@ static jerry_value_t js_lv_table_create(const jerry_call_info_t* info,
 
 
 /**
- * Set the value of a cell. New roes/columns are added automatically if required
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
+ * lv_obj_set_style_pad_column function (aliased to lv_obj_set_style_pad_column)
  */
-static jerry_value_t js_lv_table_set_cell_value(const jerry_call_info_t* info,
+static jerry_value_t js_lv_obj_set_style_pad_column(const jerry_call_info_t* info,
     const jerry_value_t args[],
     const jerry_length_t argc) {
     // 参数数量检查
-    if (argc < 4) {
+    if (argc < 3) {
         return throw_error("Insufficient arguments");
     }
 
@@ -3397,140 +3621,304 @@ static jerry_value_t js_lv_table_set_cell_value(const jerry_call_info_t* info,
     jerry_value_free(obj_ptr_val);
     void* obj = (void*)obj_ptr;
     
-    // 解析参数: row (uint32_t)
-    jerry_value_t js_row = args[1];
-    if (!jerry_value_is_number(js_row)) {
+    // 解析参数: value (int32_t)
+    jerry_value_t js_value = args[1];
+    if (!jerry_value_is_number(js_value)) {
         return throw_error("Argument 1 must be a number");
     }
     
-    uint32_t row = (uint32_t)jerry_value_as_number(js_row);
+    int32_t value = (int32_t)jerry_value_as_number(js_value);
     
-    // 解析参数: col (uint32_t)
-    jerry_value_t js_col = args[2];
-    if (!jerry_value_is_number(js_col)) {
+    // 解析参数: selector (lv_style_selector_t)
+    jerry_value_t js_selector = args[2];
+    if (!jerry_value_is_number(js_selector)) {
         return throw_error("Argument 2 must be a number");
     }
     
-    uint32_t col = (uint32_t)jerry_value_as_number(js_col);
+    uint32_t selector = (uint32_t)jerry_value_as_number(js_selector);
     
-    // 解析参数: txt (const char*)
-    jerry_value_t js_txt = args[3];
-    if (!jerry_value_is_string(js_txt)) {
-        return throw_error("Argument 3 must be a string");
-    }
-    
-    jerry_size_t txt_len = jerry_string_size(js_txt, JERRY_ENCODING_UTF8);
-    char* txt = (char*)malloc(txt_len + 1);
-    if (!txt) {
-        return throw_error("Out of memory");
-    }
-    jerry_string_to_buffer(js_txt, JERRY_ENCODING_UTF8, (jerry_char_t*)txt, txt_len);
-    txt[txt_len] = '\\0';
-
     // 调用底层函数
-    lv_table_set_cell_value(obj, row, col, txt);
-    free(txt);
+    lv_obj_set_style_pad_column(obj, value, selector);
     return jerry_undefined();
 }
 
 
 
-/********************************** 注册 LVGL 函数及回调 **********************************/
+/**
+ * Set the selected option
+ */
+static jerry_value_t js_lv_dropdown_set_selected(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 3) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: sel_opt (uint32_t)
+    jerry_value_t js_sel_opt = args[1];
+    if (!jerry_value_is_number(js_sel_opt)) {
+        return throw_error("Argument 1 must be a number");
+    }
+    
+    uint32_t sel_opt = (uint32_t)jerry_value_as_number(js_sel_opt);
+    
+    // 解析参数: anim (lv_anim_enable_t)
+    // 布尔类型或兼容类型参数: anim
+    bool anim = false;
+    if (!jerry_value_is_undefined(args[2])) {
+        if (jerry_value_is_boolean(args[2])) {
+            anim = jerry_value_to_boolean(args[2]);
+        }
+        else if (jerry_value_is_number(args[2])) {
+            anim = (jerry_value_as_number(args[2]) != 0);
+        }
+        else {
+            return throw_error("Argument 2 must be boolean or number for lv_anim_enable_t");
+        }
+    }
+    
+    // 调用底层函数
+    lv_dropdown_set_selected(obj, sel_opt, anim);
+    return jerry_undefined();
+}
+
+
 
 /**
- * @brief 函数列表
+ * Set the number of points on a data line on a chart
  */
+static jerry_value_t js_lv_chart_set_point_count(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: cnt (uint32_t)
+    jerry_value_t js_cnt = args[1];
+    if (!jerry_value_is_number(js_cnt)) {
+        return throw_error("Argument 1 must be a number");
+    }
+    
+    uint32_t cnt = (uint32_t)jerry_value_as_number(js_cnt);
+    
+    // 调用底层函数
+    lv_chart_set_point_count(obj, cnt);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Set the rotation angle of the image. The image will be rotated around the set pivot set by :ref:`lv_image_set_pivot()` Note that indexed and alpha only images can't be transformed. if image_align is LV_IMAGE_ALIGN_STRETCH or LV_IMAGE_ALIGN_FIT rotation will be set to 0 automatically.
+ */
+static jerry_value_t js_lv_img_set_angle(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 解析参数: angle (int32_t)
+    jerry_value_t js_angle = args[1];
+    if (!jerry_value_is_number(js_angle)) {
+        return throw_error("Argument 1 must be a number");
+    }
+    
+    int32_t angle = (int32_t)jerry_value_as_number(js_angle);
+    
+    // 调用底层函数
+    lv_image_set_rotation(obj, angle);
+    return jerry_undefined();
+}
+
+
+
+/**
+ * Get the text of a label the text of the label
+ */
+static jerry_value_t js_lv_label_get_text(const jerry_call_info_t* info,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: obj (const lv_obj_t*)
+    jerry_value_t js_obj = args[0];
+    if (!jerry_value_is_object(js_obj)) {
+        return throw_error("Argument 0 must be an object");
+    }
+    
+    jerry_value_t obj_ptr_prop = jerry_string_sz("__ptr");
+    jerry_value_t obj_ptr_val = jerry_object_get(js_obj, obj_ptr_prop);
+    jerry_value_free(obj_ptr_prop);
+    
+    if (!jerry_value_is_number(obj_ptr_val)) {
+        jerry_value_free(obj_ptr_val);
+        return throw_error("Invalid __ptr property");
+    }
+    
+    uintptr_t obj_ptr = (uintptr_t)jerry_value_as_number(obj_ptr_val);
+    jerry_value_free(obj_ptr_val);
+    void* obj = (void*)obj_ptr;
+    
+    // 调用底层函数
+    char* ret_value = lv_label_get_text(obj);
+
+    // 处理返回值
+    if (ret_value == NULL) {
+        return jerry_string_sz("");
+    }
+    return jerry_string_sz((const jerry_char_t*)ret_value);
+}
+
+
+
 const AppSysFuncEntry lvgl_binding_funcs[] = {
     { "register_lv_event_handler", register_lv_event_handler },
     { "unregister_lv_event_handler", unregister_lv_event_handler },
-    { "lv_event_get_target", js_lv_event_get_target },
-    { "lv_event_get_code", js_lv_event_get_code },
-    { "lv_event_get_user_data", js_lv_event_get_user_data },
-    { "lv_obj_clean", js_lv_obj_clean },
-    { "lv_obj_set_pos", js_lv_obj_set_pos },
-    { "lv_obj_set_size", js_lv_obj_set_size },
-    { "lv_obj_align", js_lv_obj_align },
-    { "lv_obj_align_to", js_lv_obj_align_to },
-    { "lv_obj_center", js_lv_obj_center },
-    { "lv_obj_add_style", js_lv_obj_add_style },
-    { "lv_obj_set_style_pad_row", js_lv_obj_set_style_pad_row },
-    { "lv_obj_set_style_pad_column", js_lv_obj_set_style_pad_column },
-    { "lv_obj_set_style_bg_color", js_lv_obj_set_style_bg_color },
-    { "lv_obj_set_style_border_color", js_lv_obj_set_style_border_color },
-    { "lv_obj_set_style_border_width", js_lv_obj_set_style_border_width },
-    { "lv_obj_set_style_text_color", js_lv_obj_set_style_text_color },
-    { "lv_obj_set_style_text_font", js_lv_obj_set_style_text_font },
-    { "lv_obj_set_style_radius", js_lv_obj_set_style_radius },
-    { "lv_obj_set_style_pad_all", js_lv_obj_set_style_pad_all },
-    { "lv_obj_create", js_lv_obj_create },
-    { "lv_obj_add_flag", js_lv_obj_add_flag },
-    { "lv_arc_create", js_lv_arc_create },
-    { "lv_arc_set_bg_angles", js_lv_arc_set_bg_angles },
-    { "lv_arc_set_value", js_lv_arc_set_value },
-    { "lv_arc_set_range", js_lv_arc_set_range },
-    { "lv_label_create", js_lv_label_create },
     { "lv_label_set_text", js_lv_label_set_text },
-    { "lv_label_set_long_mode", js_lv_label_set_long_mode },
-    { "lv_label_set_recolor", js_lv_label_set_recolor },
-    { "lv_bar_create", js_lv_bar_create },
-    { "lv_bar_set_value", js_lv_bar_set_value },
+    { "lv_obj_add_flag", js_lv_obj_add_flag },
+    { "lv_obj_set_pos", js_lv_obj_set_pos },
     { "lv_bar_set_range", js_lv_bar_set_range },
-    { "lv_chart_create", js_lv_chart_create },
-    { "lv_chart_set_type", js_lv_chart_set_type },
-    { "lv_chart_set_point_count", js_lv_chart_set_point_count },
     { "lv_checkbox_create", js_lv_checkbox_create },
-    { "lv_checkbox_set_text", js_lv_checkbox_set_text },
+    { "lv_slider_create", js_lv_slider_create },
+    { "lv_obj_create", js_lv_obj_create },
+    { "lv_obj_set_state", js_lv_obj_set_state },
+    { "lv_chart_set_range", js_lv_chart_set_range },
+    { "lv_obj_set_style_radius", js_lv_obj_set_style_radius },
+    { "lv_obj_clean", js_lv_obj_clean },
+    { "lv_slider_set_range", js_lv_slider_set_range },
+    { "lv_textarea_set_text", js_lv_textarea_set_text },
+    { "lv_event_get_target", js_lv_event_get_target },
+    { "lv_msgbox_close", js_lv_msgbox_close },
+    { "lv_obj_set_style_pad_row", js_lv_obj_set_style_pad_row },
+    { "lv_event_get_user_data", js_lv_event_get_user_data },
+    { "lv_arc_set_range", js_lv_arc_set_range },
+    { "lv_obj_set_style_pad_all", js_lv_obj_set_style_pad_all },
+    { "lv_obj_set_style_border_color", js_lv_obj_set_style_border_color },
+    { "lv_obj_set_style_bg_color", js_lv_obj_set_style_bg_color },
+    { "lv_arc_set_value", js_lv_arc_set_value },
+    { "lv_label_create", js_lv_label_create },
     { "lv_dropdown_create", js_lv_dropdown_create },
-    { "lv_dropdown_set_options", js_lv_dropdown_set_options },
-    { "lv_dropdown_set_selected", js_lv_dropdown_set_selected },
+    { "lv_obj_align_to", js_lv_obj_align_to },
+    { "lv_table_set_row_cnt", js_lv_table_set_row_cnt },
+    { "lv_obj_del", js_lv_obj_del },
+    { "lv_checkbox_set_text", js_lv_checkbox_set_text },
+    { "lv_img_set_zoom", js_lv_img_set_zoom },
+    { "lv_event_get_code", js_lv_event_get_code },
+    { "lv_arc_set_bg_angles", js_lv_arc_set_bg_angles },
+    { "lv_table_set_cell_value", js_lv_table_set_cell_value },
+    { "lv_obj_set_size", js_lv_obj_set_size },
+    { "lv_arc_create", js_lv_arc_create },
+    { "lv_obj_set_style_text_color", js_lv_obj_set_style_text_color },
+    { "lv_label_set_long_mode", js_lv_label_set_long_mode },
+    { "lv_table_create", js_lv_table_create },
+    { "lv_textarea_create", js_lv_textarea_create },
+    { "lv_slider_set_value", js_lv_slider_set_value },
+    { "lv_bar_set_value", js_lv_bar_set_value },
+    { "lv_btn_create", js_lv_btn_create },
+    { "lv_label_set_recolor", js_lv_label_set_recolor },
+    { "lv_obj_align", js_lv_obj_align },
+    { "lv_chart_create", js_lv_chart_create },
+    { "lv_roller_set_selected", js_lv_roller_set_selected },
+    { "lv_textarea_set_placeholder_text", js_lv_textarea_set_placeholder_text },
+    { "lv_obj_add_style", js_lv_obj_add_style },
+    { "lv_timer_handler", js_lv_timer_handler },
+    { "lv_textarea_add_text", js_lv_textarea_add_text },
     { "lv_dropdown_get_selected", js_lv_dropdown_get_selected },
     { "lv_msgbox_create", js_lv_msgbox_create },
-    { "lv_msgbox_close", js_lv_msgbox_close },
+    { "lv_obj_clear_flag", js_lv_obj_clear_flag },
     { "lv_roller_create", js_lv_roller_create },
-    { "lv_roller_set_options", js_lv_roller_set_options },
-    { "lv_roller_set_selected", js_lv_roller_set_selected },
-    { "lv_slider_create", js_lv_slider_create },
-    { "lv_slider_set_value", js_lv_slider_set_value },
-    { "lv_slider_set_range", js_lv_slider_set_range },
+    { "lv_obj_set_style_text_font", js_lv_obj_set_style_text_font },
+    { "lv_bar_create", js_lv_bar_create },
+    { "lv_dropdown_set_options", js_lv_dropdown_set_options },
     { "lv_slider_get_value", js_lv_slider_get_value },
-    { "lv_textarea_create", js_lv_textarea_create },
-    { "lv_textarea_add_text", js_lv_textarea_add_text },
-    { "lv_textarea_set_text", js_lv_textarea_set_text },
-    { "lv_textarea_set_placeholder_text", js_lv_textarea_set_placeholder_text },
+    { "lv_table_set_col_cnt", js_lv_table_set_col_cnt },
+    { "lv_obj_set_style_border_width", js_lv_obj_set_style_border_width },
+    { "lv_roller_set_options", js_lv_roller_set_options },
     { "lv_switch_create", js_lv_switch_create },
-    { "lv_table_create", js_lv_table_create },
-    { "lv_table_set_cell_value", js_lv_table_set_cell_value }
+    { "lv_obj_set_width", js_lv_obj_set_width },
+    { "lv_scr_act", js_lv_scr_act },
+    { "lv_chart_set_type", js_lv_chart_set_type },
+    { "lv_obj_center", js_lv_obj_center },
+    { "lv_delay_ms", js_lv_delay_ms },
+    { "lv_img_create", js_lv_img_create },
+    { "lv_obj_set_style_pad_column", js_lv_obj_set_style_pad_column },
+    { "lv_dropdown_set_selected", js_lv_dropdown_set_selected },
+    { "lv_chart_set_point_count", js_lv_chart_set_point_count },
+    { "lv_img_set_angle", js_lv_img_set_angle },
+    { "lv_label_get_text", js_lv_label_get_text }
 };
 
-const unsigned int lvgl_binding_funcs_count = 59;
-
-
-/**
- * @brief 将函数注册到 JerryScript 全局对象中
- */
-void lvgl_binding_register_functions() {
-    jerry_value_t global = jerry_current_realm();
-    for (size_t i = 0; i < lvgl_binding_funcs_count; ++i) {
-        jerry_value_t fn = jerry_function_external(lvgl_binding_funcs[i].handler);
-        jerry_value_t name = jerry_string_sz(lvgl_binding_funcs[i].name);
-        jerry_object_set(global, name, fn);
-        jerry_value_free(name);
-        jerry_value_free(fn);
-    }
-    jerry_value_free(global);
-}
-
-/********************************** 枚举类型 **********************************/
+const unsigned int lvgl_binding_funcs_count = 74;
 
 static void lvgl_binding_set_enum(jerry_value_t obj, const char* key, int32_t val) {
     jerry_value_t jkey = jerry_string_sz(key);
     jerry_value_t jval = jerry_number(val);
-    jerry_value_t res = jerry_object_set(obj, jkey, jval);
-    if (jerry_value_is_error(res)) {
-        jerry_value_free(res);
-    } else {
-        jerry_value_free(res);
-    }
+    jerry_object_set(obj, jkey, jval);
     jerry_value_free(jkey);
     jerry_value_free(jval);
 }
@@ -4340,12 +4728,54 @@ void register_lvgl_enums(void) {
     lvgl_binding_set_enum(lvgl_enum_obj, "LV_IMAGE_FLAGS_USER6", 8192);
     lvgl_binding_set_enum(lvgl_enum_obj, "LV_IMAGE_FLAGS_USER7", 16384);
     lvgl_binding_set_enum(lvgl_enum_obj, "LV_IMAGE_FLAGS_USER8", 32768);
-    jerry_value_t global_obj = jerry_current_realm();
-    jerry_value_t global_key = jerry_string_sz("lvgl_enum");
-    jerry_value_t result = jerry_object_set(global_obj, global_key, lvgl_enum_obj);
-    if (jerry_value_is_error(result)) jerry_value_free(result); else jerry_value_free(result);
-    jerry_value_free(global_key);
-    jerry_value_free(global_obj);
+    lvgl_binding_set_enum(lvgl_enum_obj, "FT_FONT_STYLE_NORMAL", 0);
+    lvgl_binding_set_enum(lvgl_enum_obj, "FT_FONT_STYLE_ITALIC", 1);
+    lvgl_binding_set_enum(lvgl_enum_obj, "FT_FONT_STYLE_BOLD", 2);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_DISP_ROTATION_0", 0);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_DISP_ROTATION_90", 1);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_DISP_ROTATION_180", 2);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_DISP_ROTATION_270", 3);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_DISP_RENDER_MODE_PARTIAL", 0);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_DISP_RENDER_MODE_DIRECT", 1);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_DISP_RENDER_MODE_FULL", 2);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_BTNMATRIX_CTRL_HIDDEN", 16);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_BTNMATRIX_CTRL_NO_REPEAT", 32);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_BTNMATRIX_CTRL_DISABLED", 64);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_BTNMATRIX_CTRL_CHECKABLE", 128);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_BTNMATRIX_CTRL_CHECKED", 256);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_BTNMATRIX_CTRL_CLICK_TRIG", 512);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_BTNMATRIX_CTRL_POPOVER", 1024);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_BTNMATRIX_CTRL_CUSTOM_1", 16384);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_BTNMATRIX_CTRL_CUSTOM_2", 32768);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_IMGBTN_STATE_RELEASED", 0);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_IMGBTN_STATE_PRESSED", 1);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_IMGBTN_STATE_DISABLED", 2);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_IMGBTN_STATE_CHECKED_RELEASED", 3);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_IMGBTN_STATE_CHECKED_PRESSED", 4);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_IMGBTN_STATE_CHECKED_DISABLED", 5);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_RES_OK", 1);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_RES_INV", 0);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_INDEV_STATE_PR", 1);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_INDEV_STATE_REL", 0);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_STYLE_ANIM_TIME", 103);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_STYLE_IMG_OPA", 68);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_STYLE_IMG_RECOLOR", 69);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_STYLE_IMG_RECOLOR_OPA", 70);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_STYLE_SHADOW_OFS_X", 64);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_STYLE_SHADOW_OFS_Y", 65);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_STYLE_TRANSFORM_ANGLE", 112);
+    lvgl_binding_set_enum(lvgl_enum_obj, "_LV_EVENT_LAST", 66);
+    lvgl_binding_set_enum(lvgl_enum_obj, "_LV_STYLE_LAST_BUILT_IN_PROP", 137);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_LABEL_LONG_WRAP", 0);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_LABEL_LONG_DOT", 1);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_LABEL_LONG_SCROLL", 2);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_LABEL_LONG_SCROLL_CIRCULAR", 3);
+    lvgl_binding_set_enum(lvgl_enum_obj, "LV_LABEL_LONG_CLIP", 4);
+    jerry_value_t global = jerry_current_realm();
+    jerry_value_t key = jerry_string_sz("lvgl_enum");
+    jerry_object_set(global, key, lvgl_enum_obj);
+    jerry_value_free(key);
+    jerry_value_free(global);
     jerry_value_free(lvgl_enum_obj);
 }
 
@@ -4355,6 +4785,7 @@ void register_lvgl_enums(void) {
  */
 void lv_binding_init() {
     lv_obj_add_event_cb(lv_scr_act(), lv_obj_deleted_cb, LV_EVENT_DELETE, NULL);
-    lvgl_binding_register_functions();
+    appsys_register_functions(lvgl_binding_funcs, sizeof(lvgl_binding_funcs) / sizeof(AppSysFuncEntry));
+    lv_bindings_special_init();
     register_lvgl_enums();
 }

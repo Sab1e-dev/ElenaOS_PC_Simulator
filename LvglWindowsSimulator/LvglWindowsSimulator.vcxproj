@@ -15,6 +15,7 @@
     <MileProjectProductName>LVGL</MileProjectProductName>
     <MileProjectVersion>9.0.0.0</MileProjectVersion>
     <MileProjectVersionTag Condition="false">Alpha 1</MileProjectVersionTag>
+    <WindowsTargetPlatformVersion>$(LatestTargetPlatformVersion)</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)'=='Debug'">
     <SupportLTL>false</SupportLTL>
@@ -40,6 +41,7 @@
       <Optimization Condition="'$(Configuration)'=='Release'">MinSpace</Optimization>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MSBuildStartupDirectory)\external\uthash\src;$(MSBuildStartupDirectory)\appsys\inc;$(MSBuildStartupDirectory)\external\jerryscript\jerry-ext\include\jerryscript-ext;$(MSBuildStartupDirectory)\external\jerryscript\jerry-core\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MultiThreadedDebug</RuntimeLibrary>
+      <LanguageStandard_C Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -639,7 +641,8 @@
     <ClInclude Include="..\appsys\inc\appsys_core.h" />
     <ClInclude Include="..\appsys\inc\appsys_native_func.h" />
     <ClInclude Include="..\appsys\inc\appsys_port.h" />
-    <ClInclude Include="..\appsys\inc\lvgl_binding.h" />
+    <ClInclude Include="..\appsys\inc\lv_bindings.h" />
+    <ClInclude Include="..\appsys\inc\lv_bindings_special.h" />
     <ClInclude Include="..\external\uthash\src\utarray.h" />
     <ClInclude Include="..\external\uthash\src\uthash.h" />
     <ClInclude Include="..\external\uthash\src\utlist.h" />
@@ -3641,6 +3644,7 @@
     <ClCompile Include="..\appsys\src\appsys_native_func.c" />
     <ClCompile Include="..\appsys\src\appsys_port.c" />
     <ClCompile Include="..\appsys\src\lv_bindings.c" />
+    <ClCompile Include="..\appsys\src\lv_bindings_special.c" />
     <ClCompile Include="..\external\jerryscript\jerry-port\common\jerry-port-context.c" />
     <ClCompile Include="..\external\jerryscript\jerry-port\common\jerry-port-fs.c" />
     <ClCompile Include="..\external\jerryscript\jerry-port\common\jerry-port-io.c" />
@@ -3648,7 +3652,9 @@
     <ClCompile Include="..\external\jerryscript\jerry-port\win\jerry-port-win-date.c" />
     <ClCompile Include="..\external\jerryscript\jerry-port\win\jerry-port-win-fs.c" />
     <ClCompile Include="..\external\jerryscript\jerry-port\win\jerry-port-win-process.c" />
-    <ClCompile Include="LvglWindowsSimulator.cpp" />
+    <ClCompile Include="LvglWindowsSimulator.cpp">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)..\LvglPlatform\freetype\.clang-format" />

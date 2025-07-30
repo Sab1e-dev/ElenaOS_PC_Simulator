@@ -28,7 +28,6 @@ lv_event_get_user_data
 lv_label_set_long_mode
 lv_label_set_recolor
 lv_btn_set_checkable
-lv_btn_toggle
 lv_btn_set_state
 lv_img_create
 lv_img_set_src
@@ -74,3 +73,8 @@ lv_msgbox_create
 lv_msgbox_add_btns
 lv_msgbox_close
 lv_obj_align_to
+lv_label_get_text
+lv_timer_handler
+lv_obj_set_width
+lv_obj_set_state
+lv_delay_ms

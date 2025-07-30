@@ -6,23 +6,26 @@ import sys
 # 配置路径
 script_dir = os.path.dirname(os.path.abspath(__file__))
 input_json_path = '../LvglPlatform/lvgl/scripts/gen_json/output/lvgl.json'
-output_c_path = 'output/lvgl_binding.c'
+output_c_path = 'output/lv_bindings.c'
 export_functions_path = os.path.join(script_dir, "export_functions.txt")
+blacklist_functions_path = os.path.join(script_dir, "blacklist_functions.txt")
 
 # 目标代码的固定部分
 HEADER_CODE = r"""
 /**
- * @file lvgl_binding.c
+ * @file lv_bindings.c
  * @brief 将 LVGL 绑定到 JerryScript 的实现文件，此文件使用脚本自动生成。
  * @author Sab1e
  * @date """ + date.today().strftime("%Y-%m-%d") + r"""
  */
-
-#include "lvgl_binding.h"
+// Application System header files
+#include "lv_bindings.h"
+#include "lv_bindings_special.h"
+#include "appsys_core.h"
+// Third party header files
 #include "jerryscript.h"
 #include "uthash.h"
 #include "lvgl/lvgl.h"
-#include "appsys_core.h"
 
 /********************************** 错误处理辅助函数 **********************************/
 static jerry_value_t throw_error(const char* message) {
@@ -180,11 +183,11 @@ static void lv_obj_deleted_cb(lv_event_t* e) {
     callback_map_t* cur, * tmp;
     HASH_ITER(hh, callback_table, cur, tmp) {
         if (cur->key.obj == obj) {
-            for (int i = 0; i < cur->callback_count; i++) {
-                jerry_value_free(cur->callbacks[i]);
-            }
-            HASH_DEL(callback_table, cur);
-            free(cur);
+        for (int i = 0; i < cur->callback_count; i++) {
+            jerry_value_free(cur->callbacks[i]);
+        }
+        HASH_DEL(callback_table, cur);
+        free(cur);
         }
     }
 }
@@ -233,18 +236,22 @@ INIT_FUNCTION_CODE = r"""
  */
 void lv_binding_init() {
     lv_obj_add_event_cb(lv_scr_act(), lv_obj_deleted_cb, LV_EVENT_DELETE, NULL);
-    lvgl_binding_register_functions();
+    appsys_register_functions(lvgl_binding_funcs, sizeof(lvgl_binding_funcs) / sizeof(AppSysFuncEntry));
+    lv_bindings_special_init();
     register_lvgl_enums();
 }
 """
 
 def parse_type(type_info):
     """解析类型信息，返回C类型字符串和类型信息字典"""
-    if type_info['json_type'] == 'ret_type':
-        return parse_type(type_info['type'])
+    if not type_info:
+        return ('void', {'is_void': True})
     
-    if type_info['json_type'] == 'pointer':
-        base_type, base_info = parse_type(type_info['type'])
+    if type_info.get('json_type') == 'ret_type':
+        return parse_type(type_info.get('type'))
+    
+    if type_info.get('json_type') == 'pointer':
+        base_type, base_info = parse_type(type_info.get('type'))
         quals = ' '.join(type_info.get('quals', []))
         if quals:
             return (f"{quals} {base_type}*", {'is_pointer': True, 'base_type': base_info})
@@ -311,7 +318,6 @@ def is_enum_type(type_name, typedefs_data):
 
 def is_typedef_convertible_to_basic(typedef_name, typedefs_data):
     """检查typedef是否可以转换为基本类型"""
-    # 首先检查是否是枚举类型
     if is_enum_type(typedef_name, typedefs_data):
         return True
         
@@ -319,11 +325,9 @@ def is_typedef_convertible_to_basic(typedef_name, typedefs_data):
         if typedef['name'] == typedef_name:
             base_type, type_info = parse_type(typedef['type'])
             
-            # 如果是void指针，可以转换为基本类型
             if type_info.get('is_pointer') and type_info['base_type'].get('is_void'):
                 return True
             
-            # 如果是基本类型的别名
             if type_info.get('is_primitive') or type_info.get('is_stdlib'):
                 return True
                     
@@ -331,7 +335,6 @@ def is_typedef_convertible_to_basic(typedef_name, typedefs_data):
 
 def get_typedef_base_type(typedef_name, typedefs_data):
     """获取typedef对应的基础类型"""
-    # 首先检查是否是枚举类型
     if is_enum_type(typedef_name, typedefs_data):
         return 'int'
         
@@ -339,11 +342,9 @@ def get_typedef_base_type(typedef_name, typedefs_data):
         if typedef['name'] == typedef_name:
             base_type, type_info = parse_type(typedef['type'])
             
-            # 如果是void指针，返回uintptr_t
             if type_info.get('is_pointer') and type_info['base_type'].get('is_void'):
                 return 'uintptr_t'
             
-            # 如果是基本类型的别名，返回基础类型
             if type_info.get('is_primitive') or type_info.get('is_stdlib'):
                 return base_type
             
@@ -442,7 +443,7 @@ def generate_string_arg_parsing(index, name):
         return throw_error("Out of memory");
     }}
     jerry_string_to_buffer(js_{name}, JERRY_ENCODING_UTF8, (jerry_char_t*){name}, {name}_len);
-    {name}[{name}_len] = '\\0';
+    {name}[{name}_len] = '\0';
 
 """
 
@@ -487,6 +488,23 @@ def generate_arg_parsing(index, name, arg_type, type_info, typedefs_data):
         return generate_string_arg_parsing(index, name)
     elif is_lv_color_t(type_str):
         return f"    lv_color_t {name} = parse_lv_color(args[{index}]);\n\n"
+    if type_str == 'bool' or (is_typedef_convertible_to_basic(type_info.get('type_name', ''), typedefs_data) 
+                             and get_typedef_base_type(type_info['type_name'], typedefs_data) == 'bool'):
+        return fr"""    // 布尔类型或兼容类型参数: {name}
+    bool {name} = false;
+    if (!jerry_value_is_undefined(args[{index}])) {{
+        if (jerry_value_is_boolean(args[{index}])) {{
+            {name} = jerry_value_to_boolean(args[{index}]);
+        }}
+        else if (jerry_value_is_number(args[{index}])) {{
+            {name} = (jerry_value_as_number(args[{index}]) != 0);
+        }}
+        else {{
+            return throw_error("Argument {index} must be boolean or number for {type_str}");
+        }}
+    }}
+    
+"""
     elif is_number_type(type_str):
         return generate_number_arg_parsing(index, name, type_str)
     
@@ -545,7 +563,10 @@ def generate_object_return():
 
 def generate_string_return():
     """生成字符串返回值的处理代码"""
-    return """    return jerry_string_sz((const jerry_char_t*)ret_value);
+    return """    if (ret_value == NULL) {
+        return jerry_string_sz("");
+    }
+    return jerry_string_sz((const jerry_char_t*)ret_value);
 """
 
 def generate_number_return():
@@ -558,23 +579,67 @@ def generate_bool_return():
     return """    return jerry_boolean(ret_value);
 """
 
+def find_real_function_definition(func_name, data):
+    """
+    查找函数的真实定义，处理宏定义的情况
+    返回 (真实函数名, 函数定义)
+    """
+    # 首先检查是否是宏定义
+    for macro in data.get('macros', []):
+        if macro['name'] == func_name and 'initializer' in macro:
+            # 提取宏定义的底层函数名
+            real_func_name = macro['initializer'].strip()
+            if real_func_name.endswith(';'):
+                real_func_name = real_func_name[:-1].strip()
+            
+            # 查找底层函数定义
+            for func in data.get('functions', []):
+                if func['name'] == real_func_name:
+                    return (real_func_name, func)
+            
+            # 如果没有找到函数定义，尝试查找函数指针
+            for func_ptr in data.get('function_pointers', []):
+                if func_ptr['name'] == real_func_name:
+                    return (real_func_name, func_ptr)
+    
+    # 如果不是宏定义，直接查找函数定义
+    for func in data.get('functions', []):
+        if func['name'] == func_name:
+            return (func_name, func)
+    
+    # 查找函数指针定义
+    for func_ptr in data.get('function_pointers', []):
+        if func_ptr['name'] == func_name:
+            return (func_name, func_ptr)
+    
+    return (None, None)
+
 def generate_binding_function(func, typedefs_data):
     """生成绑定函数实现"""
     func_name = func['name']
-    return_type, return_type_info = parse_type(func['type'])
-    args = func['args']
-    if len(args) == 1 and is_void_type(parse_type(args[0]['type'])[0]):
+    
+    # 查找真实函数定义
+    real_func_name, real_func_def = find_real_function_definition(func_name, typedefs_data)
+    if not real_func_def:
+        print(f"[警告] 未找到函数 {func_name} 的定义")
+        return ""
+    
+    # 使用真实函数定义生成代码
+    return_type = 'void'
+    return_type_info = {'is_void': True}
+    
+    if 'type' in real_func_def:
+        return_type, return_type_info = parse_type(real_func_def['type'])
+    
+    args = real_func_def.get('args', [])
+    if len(args) == 1 and is_void_type(parse_type(args[0].get('type', {}))[0]):
         args = []
-    docstring = func['docstring'].strip() or f"{func_name} function"
+    
+    docstring = real_func_def.get('docstring', '').strip() or f"{func_name} function (aliased to {real_func_name})"
 
     code = f"""
 /**
  * {docstring}
- * 
- * @param info JerryScript call info
- * @param args Arguments array
- * @param argc Arguments count
- * @return Jerry value representing result
  */
 static jerry_value_t js_{func_name}(const jerry_call_info_t* info,
     const jerry_value_t args[],
@@ -590,23 +655,28 @@ static jerry_value_t js_{func_name}(const jerry_call_info_t* info,
     string_arg_names = []
 
     for i, arg in enumerate(args):
-        arg_name = arg['name'] or f"arg{i}"
-        arg_type, arg_type_info = parse_type(arg['type'])
+        arg_name = arg.get('name', f"arg{i}")
+        arg_type = 'void'
+        arg_type_info = {'is_void': True}
+        
+        if 'type' in arg:
+            arg_type, arg_type_info = parse_type(arg['type'])
+            
         code += f"    // 解析参数: {arg_name} ({arg_type})\n"
         code += generate_arg_parsing(i, arg_name, arg_type, arg_type_info, typedefs_data)
         
         if is_string_pointer(arg_type):
             string_arg_names.append(arg_name)
 
-    has_void_arg = len(args) == 1 and is_void_type(parse_type(args[0]['type'])[0])
-    args_list = "" if has_void_arg else ", ".join([f"{arg['name'] or f'arg{i}'}" for i, arg in enumerate(args)])
+    has_void_arg = len(args) == 1 and is_void_type(parse_type(args[0].get('type', {}))[0])
+    args_list = "" if has_void_arg else ", ".join([f"{arg.get('name', f'arg{i}')}" for i, arg in enumerate(args)])
 
     return_stmt = "    // 调用底层函数\n"
-
+    
     if return_type == 'void':
-        return_stmt += f"    {func_name}({args_list});\n"
+        return_stmt += f"    {real_func_name}({args_list});\n"
     else:
-        return_stmt += f"    {return_type} ret_value = {func_name}({args_list});\n\n"
+        return_stmt += f"    {return_type} ret_value = {real_func_name}({args_list});\n\n"
         return_stmt += "    // 处理返回值\n"
 
         if is_void_pointer(return_type):
@@ -615,7 +685,7 @@ static jerry_value_t js_{func_name}(const jerry_call_info_t* info,
             return_stmt += generate_object_return()
         elif is_string_pointer(return_type):
             return_stmt += generate_string_return()
-        elif is_number_type(return_type):
+        elif is_number_type(return_type) or is_lvgl_value_type(return_type):
             return_stmt += generate_number_return()
         elif return_type == 'bool':
             return_stmt += generate_bool_return()
@@ -650,22 +720,15 @@ static jerry_value_t js_{func_name}(const jerry_call_info_t* info,
 def generate_native_funcs_list(functions):
     """生成原生函数列表数组"""
     entries = []
-    # 添加事件处理函数
     entries.append('    { "register_lv_event_handler", register_lv_event_handler }')
     entries.append('    { "unregister_lv_event_handler", unregister_lv_event_handler }')
     
-    # 添加生成的函数绑定
     for func in functions:
         func_name = func['name']
         entries.append(f'    {{ "{func_name}", js_{func_name} }}')
     
     entries_str = ',\n'.join(entries)
     return f"""
-/********************************** 注册 LVGL 函数及回调 **********************************/
-
-/**
- * @brief 函数列表
- */
 const AppSysFuncEntry lvgl_binding_funcs[] = {{
 {entries_str}
 }};
@@ -673,39 +736,13 @@ const AppSysFuncEntry lvgl_binding_funcs[] = {{
 const unsigned int lvgl_binding_funcs_count = {len(functions)+2};
 """
 
-def generate_register_function():
-    """生成函数注册函数"""
-    return """
-/**
- * @brief 将函数注册到 JerryScript 全局对象中
- */
-void lvgl_binding_register_functions() {
-    jerry_value_t global = jerry_current_realm();
-    for (size_t i = 0; i < lvgl_binding_funcs_count; ++i) {
-        jerry_value_t fn = jerry_function_external(lvgl_binding_funcs[i].handler);
-        jerry_value_t name = jerry_string_sz(lvgl_binding_funcs[i].name);
-        jerry_object_set(global, name, fn);
-        jerry_value_free(name);
-        jerry_value_free(fn);
-    }
-    jerry_value_free(global);
-}
-"""
-
-def generate_enum_binding(enums):
-    """生成枚举绑定代码"""
+def generate_enum_binding(enums, macros=None):
+    """生成枚举绑定代码，处理enums和macros"""
     lines = []
-    lines.append("/********************************** 枚举类型 **********************************/")
-    lines.append("")
     lines.append("static void lvgl_binding_set_enum(jerry_value_t obj, const char* key, int32_t val) {")
     lines.append("    jerry_value_t jkey = jerry_string_sz(key);")
     lines.append("    jerry_value_t jval = jerry_number(val);")
-    lines.append("    jerry_value_t res = jerry_object_set(obj, jkey, jval);")
-    lines.append("    if (jerry_value_is_error(res)) {")
-    lines.append("        jerry_value_free(res);")
-    lines.append("    } else {")
-    lines.append("        jerry_value_free(res);")
-    lines.append("    }")
+    lines.append("    jerry_object_set(obj, jkey, jval);")
     lines.append("    jerry_value_free(jkey);")
     lines.append("    jerry_value_free(jval);")
     lines.append("}")
@@ -713,28 +750,71 @@ def generate_enum_binding(enums):
     lines.append("void register_lvgl_enums(void) {")
     lines.append("    jerry_value_t lvgl_enum_obj = jerry_object();")
     
+    # 第一步：收集所有枚举成员名和值的映射
+    enum_members = {}
     for enum in enums:
-        members = enum.get("members", [])
-        for member in members:
-            name = member.get("name")
-            value = member.get("value")
-            if not name or value is None:
+        if enum is None:  # 检查enum是否为None
+            continue
+        for member in enum.get('members', []):
+            if member is None:  # 检查member是否为None
                 continue
-            try:
-                val_int = int(value, 0)  # 支持十六进制
-                lines.append(f'    lvgl_binding_set_enum(lvgl_enum_obj, "{name}", {val_int});')
-            except ValueError:
+            name = member.get('name')
+            value = member.get('value')
+            if name and value is not None:
+                try:
+                    enum_members[name] = int(value, 0)  # 支持十六进制
+                except ValueError:
+                    continue
+    
+    # 第二步：处理所有宏定义
+    if macros:
+        macro_definitions = {}
+        for macro in macros:
+            if macro is None:  # 检查macro是否为None
                 continue
-
-    lines.append("    jerry_value_t global_obj = jerry_current_realm();")
-    lines.append('    jerry_value_t global_key = jerry_string_sz("lvgl_enum");')
-    lines.append("    jerry_value_t result = jerry_object_set(global_obj, global_key, lvgl_enum_obj);")
-    lines.append("    if (jerry_value_is_error(result)) jerry_value_free(result); else jerry_value_free(result);")
-    lines.append("    jerry_value_free(global_key);")
-    lines.append("    jerry_value_free(global_obj);")
+            macro_name = macro.get('name')
+            initializer = macro.get('initializer', '')
+            if initializer is None:  # 检查initializer是否为None
+                initializer = ''
+            initializer = initializer.strip()
+            
+            # 清理初始值（去除分号和空格）
+            if initializer.endswith(';'):
+                initializer = initializer[:-1].strip()
+            
+            # 检查初始值是否是已知的枚举成员
+            if initializer in enum_members:
+                macro_definitions[macro_name] = enum_members[initializer]
+        
+        # 将宏定义添加到枚举成员中
+        enum_members.update(macro_definitions)
+    
+    # 第三步：生成枚举绑定代码
+    for name, value in enum_members.items():
+        lines.append(f'    lvgl_binding_set_enum(lvgl_enum_obj, "{name}", {value});')
+    
+    lines.append("    jerry_value_t global = jerry_current_realm();")
+    lines.append('    jerry_value_t key = jerry_string_sz("lvgl_enum");')
+    lines.append("    jerry_object_set(global, key, lvgl_enum_obj);")
+    lines.append("    jerry_value_free(key);")
+    lines.append("    jerry_value_free(global);")
     lines.append("    jerry_value_free(lvgl_enum_obj);")
     lines.append("}")
     return "\n".join(lines)
+
+def load_blacklist_functions(file_path):
+    """加载黑名单函数列表"""
+    blacklist = set()
+    if os.path.exists(file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    blacklist.add(line)
+        print(f"[已加载] 黑名单函数列表 {file_path} 中共有 {len(blacklist)} 个函数")
+    else:
+        print(f"[提示] 未找到黑名单函数列表文件: {file_path}")
+    return blacklist
 
 def load_export_functions(file_path):
     """加载导出函数列表"""
@@ -746,18 +826,17 @@ def load_export_functions(file_path):
                 line = line.strip()
                 if line and not line.startswith("#"):
                     if line not in functions:
-                        lines.append(line)  # 保持原始顺序（第一次出现）
+                        lines.append(line)
                     functions.add(line)
 
-        # 自动去重并写回文件（覆盖原文件）
         with open(file_path, "w", encoding="utf-8") as f:
             for func in lines:
                 f.write(func + "\n")
         print(f"[已自动去重并更新] {file_path} 中共保留 {len(lines)} 个唯一函数名")
-
     else:
         print(f"[警告] 未找到函数导出列表文件: {file_path}")
     return functions
+
 
 def main():
     # 从同级目录读取lvgl.json
@@ -771,7 +850,25 @@ def main():
     # 生成绑定函数
     binding_code = ""
     EXPORT_FUNCTIONS = load_export_functions(export_functions_path)
-    exported_funcs = [func for func in data['functions'] if func['name'] in EXPORT_FUNCTIONS]
+    BLACKLIST_FUNCTIONS = load_blacklist_functions(blacklist_functions_path)  # 加载黑名单
+    
+    # 收集所有需要导出的函数（排除黑名单中的函数）
+    exported_funcs = []
+    for func_name in EXPORT_FUNCTIONS:
+        if func_name in BLACKLIST_FUNCTIONS:
+            print(f"[跳过] 函数 {func_name} 在黑名单中，不生成绑定代码")
+            continue
+            
+        # 查找函数定义，包括宏定义
+        real_func_name, real_func_def = find_real_function_definition(func_name, data)
+        if real_func_def:
+            # 创建一个新的字典，保留原始函数名
+            func_copy = real_func_def.copy()
+            func_copy['name'] = func_name  # 保留原始函数名
+            exported_funcs.append(func_copy)
+        else:
+            print(f"[警告] 未找到函数 {func_name} 的定义")
+    
     if not exported_funcs:
         print("❌ 没有找到匹配的导出函数，请检查 export_functions.txt 文件。")
         return
@@ -784,18 +881,18 @@ def main():
     
     # 生成函数实现
     for func in exported_funcs:
-        binding_code += generate_binding_function(func, data)  # 传递整个data作为typedefs_data
+        binding_code += generate_binding_function(func, data)
         binding_code += "\n\n"
     
     # 生成函数列表
     func_list = generate_native_funcs_list(exported_funcs)
     
-    # 生成函数注册函数
-    register_function = generate_register_function()
+    # 从JSON数据中获取enums和macros
+    enums = data.get('enums', [])
+    macros = data.get('macros', [])
     
     # 生成枚举绑定
-    enums = data.get("enums", [])
-    enum_binding = generate_enum_binding(enums)
+    enum_binding = generate_enum_binding(enums, macros)
     
     # 构建完整的C代码
     output = (
@@ -805,7 +902,6 @@ def main():
         "// 函数实现\n" +
         binding_code +
         func_list + "\n" +
-        register_function + "\n" +
         enum_binding + "\n" +
         INIT_FUNCTION_CODE
     )
@@ -820,8 +916,6 @@ if __name__ == "__main__":
     for arg in sys.argv:
         if arg.startswith('--json-path='):
             input_json_path = arg.split('=', 1)[1]
-            print("指定 json 路径:", input_json_path)
         elif arg.startswith('--output-c-path='):
             output_c_path = arg.split('=', 1)[1]
-            print("指定 C 路径:", output_c_path)
     main()

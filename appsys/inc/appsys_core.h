@@ -14,7 +14,7 @@ extern "C" {
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "lvgl.h"
+#include "lvgl/lvgl.h"
 #include "jerryscript.h"
 // 类型声明
 /**
@@ -47,6 +47,7 @@ typedef enum {
 
 // 函数声明
 AppRunResult_t appsys_run_app(const ApplicationPackage_t* app);
+void appsys_register_functions(const AppSysFuncEntry* entry, const size_t funcs_count);
 
 #ifdef __cplusplus
 }

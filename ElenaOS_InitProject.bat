@@ -59,19 +59,39 @@ echo ==============================
 echo Generating lvgl.json...
 echo ==============================
 
-
-@REM cd /d "%GenJSONPath%"
+cd /d "%GenJSONPath%"
 if not exist output md output
 
 :: 使用检测到的 Python 3.10 创建虚拟环境
 "!PYTHON_EXE!" -m venv .venv
 
-:: 安装依赖
-"%GenJSONPath%"\venv\Scripts\python -m pip install -r requirements.txt
+set "GENJSON_VIRTUAL_PYTHON_EXE=%GenJSONPath%\.venv\Scripts\python.exe"
 
+:: 安装依赖
+"!GENJSON_VIRTUAL_PYTHON_EXE!" -m pip install -r "%GenJSONPath%"\requirements.txt
+
+if not exist "!GENJSON_VIRTUAL_PYTHON_EXE!" echo Python解释器不存在
+
+if not exist "%GenJSONPath%\gen_json.py" echo Python脚本不存在
+
+if not exist "%CWD%\LvglWindowsSimulator\lv_conf.h" echo 配置文件不存在
+
+if exist "%GenJSONPath%\output\lvgl.json" (
+    del /q "%GenJSONPath%\output\lvgl.json"
+)
+
+echo 正在生成 [lvgl.json]
 :: 生成 JSON 文件
-"%GenJSONPath%"\venv\Scripts\python gen_json.py --output-path=output
-echo ✅ 生成的 JSON 文件位于: %GenJSONPath%\output\lvgl.json
+set LV_CONF_PARAMETER=--lvgl-config="%CWD%\lv_conf.h"
+set OUTPUT_PATH_PARAMETER=--output-path="%GenJSONPath%\output"
+
+"!GENJSON_VIRTUAL_PYTHON_EXE!" "%GenJSONPath%\gen_json.py" %OUTPUT_PATH_PARAMETER% %LV_CONF_PARAMETER%
+if exist "%GenJSONPath%\output\lvgl.json" (
+    echo ✅ 生成的 JSON 文件位于: %GenJSONPath%\output\lvgl.json
+) else (
+    echo ❌ 生成失败，正在推出程序...
+    goto :END
+)
 
 :GEN_LV_BINDING_C
 echo.

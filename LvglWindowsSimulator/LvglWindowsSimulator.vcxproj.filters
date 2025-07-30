@@ -1779,9 +1779,6 @@
     <ClInclude Include="..\appsys\inc\appsys_native_func.h">
       <Filter>appsys\inc</Filter>
     </ClInclude>
-    <ClInclude Include="..\appsys\inc\lvgl_binding.h">
-      <Filter>appsys\inc</Filter>
-    </ClInclude>
     <ClInclude Include="..\external\uthash\src\utarray.h">
       <Filter>uthash</Filter>
     </ClInclude>
@@ -1799,6 +1796,12 @@
     </ClInclude>
     <ClInclude Include="..\external\uthash\src\utstring.h">
       <Filter>uthash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\appsys\inc\lv_bindings.h">
+      <Filter>appsys\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\appsys\inc\lv_bindings_special.h">
+      <Filter>appsys\inc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -4075,6 +4078,9 @@
       <Filter>jerryscript\jerry-port\win</Filter>
     </ClCompile>
     <ClCompile Include="..\appsys\src\lv_bindings.c">
+      <Filter>appsys\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\appsys\src\lv_bindings_special.c">
       <Filter>appsys\src</Filter>
     </ClCompile>
   </ItemGroup>

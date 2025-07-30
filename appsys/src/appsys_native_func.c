@@ -67,71 +67,6 @@ jerry_value_t js_delay_handler(const jerry_call_info_t* call_info_p,
     Sleep(args_p[0]);
 }
 
-static jerry_value_t js_lv_btn_create(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    if (argc < 1 || !jerry_value_is_object(args[0])) {
-        return jerry_undefined();
-    }
-
-    // 从 JS 对象中提取原始指针
-    jerry_value_t js_parent = args[0];
-    jerry_value_t ptr_val = jerry_object_get(js_parent, jerry_string_sz((const jerry_char_t*)"__ptr"));
-
-    if (!jerry_value_is_number(ptr_val)) {
-        jerry_value_free(ptr_val);
-        return jerry_undefined();
-    }
-
-    uintptr_t parent_ptr = (uintptr_t)jerry_value_as_number(ptr_val);
-    lv_obj_t* parent = (lv_obj_t*)parent_ptr;
-
-    jerry_value_free(ptr_val);
-
-    // 调用 LVGL 原生函数
-    lv_obj_t* btn = lv_btn_create(parent);
-
-    // 包装为 JS 对象返回
-    jerry_value_t js_obj = jerry_object();
-
-    jerry_value_t ptr = jerry_number((double)(uintptr_t)btn);
-    jerry_value_t cls = jerry_string_sz((const jerry_char_t*)"lv_obj");
-
-    jerry_object_set(js_obj, jerry_string_sz((const jerry_char_t*)"__ptr"), ptr);
-    jerry_object_set(js_obj, jerry_string_sz((const jerry_char_t*)"__class"), cls);
-
-    jerry_value_free(ptr);
-    jerry_value_free(cls);
-
-    return js_obj;
-}
-
-static jerry_value_t js_lv_scr_act(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 调用 LVGL 的原始函数
-    lv_obj_t* scr = lv_scr_act();
-
-    // 包装为 JS 对象
-    jerry_value_t js_obj = jerry_object();
-
-    jerry_value_t ptr = jerry_number((double)(uintptr_t)scr);
-    jerry_value_t cls = jerry_string_sz((const jerry_char_t*)"lv_obj");
-
-    jerry_object_set(js_obj, jerry_string_sz((const jerry_char_t*)"__ptr"), ptr);
-    jerry_object_set(js_obj, jerry_string_sz((const jerry_char_t*)"__class"), cls);
-
-    jerry_value_free(ptr);
-    jerry_value_free(cls);
-
-    return js_obj;
-}
-static jerry_value_t js_lv_timer_handler(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    lv_timer_handler();
-    return jerry_undefined(); // 无返回值
-}
 /********************************** 注册原生函数 **********************************/
 
 /**
@@ -146,31 +81,12 @@ const AppSysFuncEntry appsys_native_funcs[] = {
         .name = "delay",
         .handler = js_delay_handler
     },
-    {
-        .name = "lv_btn_create",
-        .handler = js_lv_btn_create
-    },
-    {
-        .name = "lv_scr_act",
-        .handler = js_lv_scr_act
-    },
-    {
-        .name = "lv_timer_handler",
-        .handler = js_lv_timer_handler
-    }
+    
 };
 
 /**
  * @brief 将原生函数注册到 JerryScript 全局对象中
  */
 void appsys_register_natives() {
-    jerry_value_t global = jerry_current_realm();
-    for (size_t i = 0; i < sizeof(appsys_native_funcs) / sizeof(appsys_native_funcs[0]); ++i) {
-        jerry_value_t fn = jerry_function_external(appsys_native_funcs[i].handler);
-        jerry_value_t name = jerry_string_sz(appsys_native_funcs[i].name);
-        jerry_object_set(global, name, fn);
-        jerry_value_free(name);
-        jerry_value_free(fn);
-    }
-    jerry_value_free(global);
+    appsys_register_functions(appsys_native_funcs, sizeof(appsys_native_funcs) / sizeof(AppSysFuncEntry));
 }

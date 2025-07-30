@@ -9,12 +9,28 @@
 #include "appsys_core.h"
 #include "stdio.h"
 #include "appsys_native_func.h"
-#include "lvgl_binding.h"
-
+#include "lv_bindings.h"
+#include "lv_bindings_special.h"
+#include "appsys_port.h"
 
 // 全局状态记录是否已初始化 VM
 static bool js_vm_initialized = false;
-
+/**
+ * @brief 注册C函数到JS
+ * @param entry 函数入口数组
+ * @param funcs_count 数组长度
+ */
+void appsys_register_functions(const AppSysFuncEntry* entry,const size_t funcs_count) {
+    jerry_value_t global = jerry_current_realm();
+    for (size_t i = 0; i < funcs_count; ++i) {
+        jerry_value_t fn = jerry_function_external(entry[i].handler);
+        jerry_value_t name = jerry_string_sz(entry[i].name);
+        jerry_object_set(global, name, fn);
+        jerry_value_free(name);
+        jerry_value_free(fn);
+    }
+    jerry_value_free(global);
+}
 /**
  * @brief appsys_clear_current_app 清除当前运行的 JS 应用
  */
