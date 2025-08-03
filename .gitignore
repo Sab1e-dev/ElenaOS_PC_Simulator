@@ -414,3 +414,4 @@ FodyWeavers.xsd
 *.sln.iml
 /.venv
 /A.c
+/.vscode/settings.json
