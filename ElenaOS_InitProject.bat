@@ -104,10 +104,11 @@ cd /d "%CWD%"
 
 "!VIRTUAL_PYTHON_EXE!" -m pip install -r "%CWD%"\requirements.txt
 
-"!VIRTUAL_PYTHON_EXE!" %CWD%\scripts\gen_lvgl_binding.py ^
+"!VIRTUAL_PYTHON_EXE!" %CWD%\scripts\lv_binding_jerryscript\gen_lvgl_binding.py ^
  --json-path=%GenJSONPath%\output\lvgl.json ^
  --output-c-path=%CWD%\appsys\src\lv_bindings.c ^
- --extract-funcs-from=%CWD%\LvglWindowsSimulator\main.js
+ --extract-funcs-from=%CWD%\LvglWindowsSimulator\main.js ^
+ --cfg-path=%CWD%\scripts\lv_binding_jerryscript\examples\ElenaOS_PC_Simulator
 
 :END
 endlocal

@@ -13,3 +13,6 @@
 [submodule "scripts/lv_binding_jerryscript"]
 	path = scripts/lv_binding_jerryscript
 	url = https://github.com/Sab1e-dev/lv_binding_jerryscript
+[submodule "external/lv_binding_jerryscript"]
+	path = external/lv_binding_jerryscript
+	url = https://github.com/Sab1e-dev/lv_binding_jerryscript

@@ -3,7 +3,7 @@
  * @file lv_bindings.c
  * @brief 将 LVGL 绑定到 JerryScript 的实现文件，此文件使用脚本自动生成。
  * @author Sab1e
- * @date 2025-08-01
+ * @date 2025-08-03
  */
 // Application System header files
 #include "lv_bindings.h"

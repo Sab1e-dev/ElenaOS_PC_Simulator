@@ -1,8 +1,8 @@
 ﻿/**
- * @file lvgl_test.js
+ * @file main.js
  * @brief 测试LVGL绑定函数的JavaScript代码
- * @author YourName
- * @date 2023-06-15
+ * @author Sab1e
+ * @date 2025-08-03
  */
 
 let btn_click_count = 0;
