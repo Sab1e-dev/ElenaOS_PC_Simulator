@@ -137,8 +137,13 @@ int main()
         .author = "Sab1e",
         .description = "一个简单的时钟应用",
         .mainjs_str = (char*)script };
-
+    printf("LV_COLOR_DEPTH: %d\n", LV_COLOR_DEPTH);
+    printf("lv_color_t size: %d\n", sizeof(lv_color_t));
+    lv_color_t color;
+    color.red = 1;
+    printf("%d", color.red);
     appsys_run_app(&app);
+    
     lv_obj_t* label = lv_label_create(lv_screen_active());
     lv_label_set_text(label, "Red label");
 

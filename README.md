@@ -1,7 +1,7 @@
 ﻿# ElenaOS PC Simulator
 
 > [!CAUTION]
-> 项目未完成
+> 项目正在开发中...
 
 ## ElenaOS
 
