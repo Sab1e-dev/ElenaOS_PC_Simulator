@@ -123,7 +123,6 @@ int main()
     lv_obj_t* img = lv_img_create(lv_scr_act());
     lv_img_set_src(img, &B);
     lv_obj_align(img, LV_ALIGN_CENTER, 0, 0);*/
-
     char cwd[256];
     _getcwd(cwd, sizeof(cwd));
     printf("Current working directory: %s\n", cwd);

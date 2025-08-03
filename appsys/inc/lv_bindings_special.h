@@ -14,11 +14,16 @@ extern "C" {
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "lvgl.h"
+#include "jerryscript.h"
 
 // 类型声明
 
 // 函数声明
+lv_color_t js_to_lv_color(jerry_value_t js_color);
+jerry_value_t lv_color_to_js(lv_color_t color);
 void lv_bindings_special_init();
+
 #ifdef __cplusplus
 }
 #endif

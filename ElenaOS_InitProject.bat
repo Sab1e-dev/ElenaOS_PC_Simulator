@@ -30,11 +30,19 @@ echo.
 echo ✅ 已检测到 Python %PYTHON_REQUIRED%
 echo 使用解释器: !PYTHON_EXE!
 
+:: 使用检测到的 Python 3.10 创建虚拟环境
+"!PYTHON_EXE!" -m venv .venv
+
+set "VIRTUAL_PYTHON_EXE=%CWD%\.venv\Scripts\python.exe"
+
+if not exist "!VIRTUAL_PYTHON_EXE!" echo 虚拟Python环境创建失败
+
 :: ===================================================================
 :: 主脚本开始
 :: ===================================================================
 
 :: ========DEBUG========
+@REM goto :GEN_LVGL_JSON
 goto :GEN_LV_BINDING_C
 
 :BUILD_JERRYSCRIPT
@@ -59,22 +67,14 @@ echo ==============================
 echo Generating lvgl.json...
 echo ==============================
 
-cd /d "%GenJSONPath%"
 if not exist output md output
-
-:: 使用检测到的 Python 3.10 创建虚拟环境
-"!PYTHON_EXE!" -m venv .venv
-
-set "GENJSON_VIRTUAL_PYTHON_EXE=%GenJSONPath%\.venv\Scripts\python.exe"
-
-:: 安装依赖
-"!GENJSON_VIRTUAL_PYTHON_EXE!" -m pip install -r "%GenJSONPath%"\requirements.txt
-
-if not exist "!GENJSON_VIRTUAL_PYTHON_EXE!" echo Python解释器不存在
 
 if not exist "%GenJSONPath%\gen_json.py" echo Python脚本不存在
 
 if not exist "%CWD%\LvglWindowsSimulator\lv_conf.h" echo 配置文件不存在
+
+:: 安装依赖
+"!VIRTUAL_PYTHON_EXE!" -m pip install -r "%GenJSONPath%"\requirements.txt
 
 if exist "%GenJSONPath%\output\lvgl.json" (
     del /q "%GenJSONPath%\output\lvgl.json"
@@ -83,9 +83,11 @@ if exist "%GenJSONPath%\output\lvgl.json" (
 echo 正在生成 [lvgl.json]
 :: 生成 JSON 文件
 set LV_CONF_PARAMETER=--lvgl-config="%CWD%\lv_conf.h"
+
 set OUTPUT_PATH_PARAMETER=--output-path="%GenJSONPath%\output"
 
-"!GENJSON_VIRTUAL_PYTHON_EXE!" "%GenJSONPath%\gen_json.py" %OUTPUT_PATH_PARAMETER% %LV_CONF_PARAMETER%
+"!VIRTUAL_PYTHON_EXE!" "%GenJSONPath%\gen_json.py" %OUTPUT_PATH_PARAMETER% %LV_CONF_PARAMETER%
+
 if exist "%GenJSONPath%\output\lvgl.json" (
     echo ✅ 生成的 JSON 文件位于: %GenJSONPath%\output\lvgl.json
 ) else (
@@ -99,9 +101,13 @@ echo ==============================
 echo Generating lv_bindings.c...
 echo ==============================
 cd /d "%CWD%"
-"!PYTHON_EXE!" %CWD%\scripts\gen_lvgl_binding.py ^
+
+"!VIRTUAL_PYTHON_EXE!" -m pip install -r "%CWD%"\requirements.txt
+
+"!VIRTUAL_PYTHON_EXE!" %CWD%\scripts\gen_lvgl_binding.py ^
  --json-path=%GenJSONPath%\output\lvgl.json ^
- --output-c-path=%CWD%\appsys\src\lv_bindings.c
+ --output-c-path=%CWD%\appsys\src\lv_bindings.c ^
+ --extract-funcs-from=%CWD%\LvglWindowsSimulator\main.js
 
 :END
 endlocal

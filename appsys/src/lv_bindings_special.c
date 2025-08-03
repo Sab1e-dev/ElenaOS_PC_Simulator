@@ -18,6 +18,61 @@ static jerry_value_t throw_error(const char* message) {
     return jerry_throw_value(error_obj, true);
 }
 
+
+/********************************** 函数系统 **********************************/
+
+// 解析 lv_color_t 参数
+lv_color_t js_to_lv_color(jerry_value_t js_color) {
+    lv_color_t color;
+
+    if (jerry_value_is_number(js_color)) {
+        uint32_t val = (uint32_t)jerry_value_as_number(js_color);
+        color.red = (val >> 16) & 0xFF;
+        color.green = (val >> 8) & 0xFF;
+        color.blue = val & 0xFF;
+        return color;
+    }
+
+    if (!jerry_value_is_object(js_color)) {
+        color.red = 0;
+        color.green = 0;
+        color.blue = 0;
+        return color;
+    }
+
+    jerry_value_t r_val = jerry_object_get(js_color, jerry_string_sz("red"));
+    jerry_value_t g_val = jerry_object_get(js_color, jerry_string_sz("green"));
+    jerry_value_t b_val = jerry_object_get(js_color, jerry_string_sz("blue"));
+
+    color.red = jerry_value_is_number(r_val) ? (uint8_t)jerry_value_as_number(r_val) : 0;
+    color.green = jerry_value_is_number(g_val) ? (uint8_t)jerry_value_as_number(g_val) : 0;
+    color.blue = jerry_value_is_number(b_val) ? (uint8_t)jerry_value_as_number(b_val) : 0;
+
+    jerry_value_free(r_val);
+    jerry_value_free(g_val);
+    jerry_value_free(b_val);
+
+    return color;
+}
+
+jerry_value_t lv_color_to_js(lv_color_t color) {
+    jerry_value_t js_color = jerry_object();
+
+    // 添加RGB分量
+    jerry_object_set(js_color, jerry_string_sz("r"), jerry_number(color.red));
+    jerry_object_set(js_color, jerry_string_sz("g"), jerry_number(color.green));
+    jerry_object_set(js_color, jerry_string_sz("b"), jerry_number(color.blue));
+
+    // 添加十六进制颜色值
+    uint32_t hex = (color.red << 16) | (color.green << 8) | color.blue;
+    jerry_object_set(js_color, jerry_string_sz("hex"), jerry_number(hex));
+
+    // 标记为LVGL颜色对象
+    jerry_object_set(js_color, jerry_string_sz("__type"), jerry_string_sz("lv_color"));
+
+    return js_color;
+}
+
 /********************************** 特殊 LVGL 函数 **********************************/
 
 /**
@@ -124,34 +179,42 @@ static jerry_value_t js_lv_img_set_src(const jerry_call_info_t* info,
 
     return jerry_undefined();
 }
+/********************************** 字体系统 **********************************/
+static void register_lvgl_fonts(void) {
+    jerry_value_t global = jerry_current_realm();
 
-static jerry_value_t js_lv_scr_act(const jerry_call_info_t* info,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 调用 LVGL 的原始函数
-    lv_obj_t* scr = lv_scr_act();
+    // 创建字体对象容器
+    jerry_value_t fonts = jerry_object();
 
-    // 包装为 JS 对象
-    jerry_value_t js_obj = jerry_object();
+    // 注册Montserrat字体集
+#define REGISTER_FONT(name) do { \
+        jerry_value_t font_obj = jerry_object(); \
+        jerry_object_set(font_obj, jerry_string_sz("__ptr"), jerry_number((uintptr_t)&name)); \
+        jerry_object_set(font_obj, jerry_string_sz("__type"), jerry_string_sz("lv_font")); \
+        jerry_object_set(fonts, jerry_string_sz(#name), font_obj); \
+        jerry_value_free(font_obj); \
+    } while(0);
 
-    jerry_value_t ptr = jerry_number((double)(uintptr_t)scr);
-    jerry_value_t cls = jerry_string_sz((const jerry_char_t*)"lv_obj");
+    REGISTER_FONT(lv_font_montserrat_14);
+    REGISTER_FONT(lv_font_montserrat_20);
+    /************************* 此处可以增加更多字体 ************************/
 
-    jerry_object_set(js_obj, jerry_string_sz((const jerry_char_t*)"__ptr"), ptr);
-    jerry_object_set(js_obj, jerry_string_sz((const jerry_char_t*)"__class"), cls);
+#undef REGISTER_FONT
 
-    jerry_value_free(ptr);
-    jerry_value_free(cls);
-
-    return js_obj;
+    // 将字体容器挂载到全局对象
+    jerry_object_set(global, jerry_string_sz("lv_font"), fonts);
+    jerry_value_free(fonts);
+    jerry_value_free(global);
 }
+
 const AppSysFuncEntry lvgl_binding_special_funcs[] = {
     { "lv_disp_get_scr_act", js_lv_disp_get_scr_act },
-    { "lv_img_set_src", js_lv_img_set_src },
-    { "lv_scr_act", js_lv_scr_act }
+    { "lv_img_set_src", js_lv_img_set_src }
 };
 
 void lv_bindings_special_init(void) {
     // 初始化函数
     appsys_register_functions(lvgl_binding_special_funcs, sizeof(lvgl_binding_special_funcs) / sizeof(AppSysFuncEntry));
+    register_lvgl_fonts();
 }
+
