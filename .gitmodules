@@ -10,3 +10,6 @@
 [submodule "external/uthash"]
 	path = external/uthash
 	url = https://github.com/troydhanson/uthash.git
+[submodule "scripts/lv_binding_jerryscript"]
+	path = scripts/lv_binding_jerryscript
+	url = https://github.com/Sab1e-dev/lv_binding_jerryscript
