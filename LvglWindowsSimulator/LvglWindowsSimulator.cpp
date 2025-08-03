@@ -138,14 +138,19 @@ int main()
         .description = "一个简单的时钟应用",
         .mainjs_str = (char*)script };
 
+    appsys_run_app(&app);
+    lv_obj_t* label = lv_label_create(lv_screen_active());
+    lv_label_set_text(label, "Red label");
 
+    static lv_style_t style;
+    lv_style_init(&style);
+    lv_style_set_text_color(&style, lv_color_hex(0xff0000)); // 红色
+
+    lv_obj_add_style(label, &style, LV_PART_MAIN);
 
     while (1) {
-        appsys_run_app(&app);
-        printf("\nPress enter to continue...\n");
-        char c;
-        scanf("%c", &c);
-        Sleep(1000); // 等待 1 秒后重新运行应用
+        uint32_t t = lv_timer_handler();
+        lv_delay_ms(t);
     }
     //while (1)
     //{

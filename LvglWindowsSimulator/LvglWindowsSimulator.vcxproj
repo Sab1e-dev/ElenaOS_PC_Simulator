@@ -39,7 +39,7 @@
       <PreprocessorDefinitions>LV_CONF_INCLUDE_SIMPLE;LV_LVGL_H_INCLUDE_SIMPLE;LV_USE_DEV_VERSION;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS
 ;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Optimization Condition="'$(Configuration)'=='Release'">MinSpace</Optimization>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MSBuildStartupDirectory)\external\uthash\src;$(MSBuildStartupDirectory)\appsys\inc;$(MSBuildStartupDirectory)\external\jerryscript\jerry-ext\include\jerryscript-ext;$(MSBuildStartupDirectory)\external\jerryscript\jerry-core\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\WorkSpace\ElenaWatch\ElenaOS\Simulator\ElenaOS_PC_Simulator\external\lv_binding_jerryscript\inc;$(MSBuildStartupDirectory)\external\uthash\src;$(MSBuildStartupDirectory)\appsys\inc;$(MSBuildStartupDirectory)\external\jerryscript\jerry-ext\include\jerryscript-ext;$(MSBuildStartupDirectory)\external\jerryscript\jerry-core\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MultiThreadedDebug</RuntimeLibrary>
       <LanguageStandard_C Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">stdc17</LanguageStandard_C>
     </ClCompile>
@@ -641,8 +641,8 @@
     <ClInclude Include="..\appsys\inc\appsys_core.h" />
     <ClInclude Include="..\appsys\inc\appsys_native_func.h" />
     <ClInclude Include="..\appsys\inc\appsys_port.h" />
-    <ClInclude Include="..\appsys\inc\lv_bindings.h" />
-    <ClInclude Include="..\appsys\inc\lv_bindings_special.h" />
+    <ClInclude Include="..\external\lv_binding_jerryscript\inc\lv_bindings.h" />
+    <ClInclude Include="..\external\lv_binding_jerryscript\inc\lv_bindings_misc.h" />
     <ClInclude Include="..\external\uthash\src\utarray.h" />
     <ClInclude Include="..\external\uthash\src\uthash.h" />
     <ClInclude Include="..\external\uthash\src\utlist.h" />
@@ -3643,8 +3643,6 @@
     <ClCompile Include="..\appsys\src\appsys_core.c" />
     <ClCompile Include="..\appsys\src\appsys_native_func.c" />
     <ClCompile Include="..\appsys\src\appsys_port.c" />
-    <ClCompile Include="..\appsys\src\lv_bindings.c" />
-    <ClCompile Include="..\appsys\src\lv_bindings_special.c" />
     <ClCompile Include="..\external\jerryscript\jerry-port\common\jerry-port-context.c" />
     <ClCompile Include="..\external\jerryscript\jerry-port\common\jerry-port-fs.c" />
     <ClCompile Include="..\external\jerryscript\jerry-port\common\jerry-port-io.c" />
@@ -3652,6 +3650,8 @@
     <ClCompile Include="..\external\jerryscript\jerry-port\win\jerry-port-win-date.c" />
     <ClCompile Include="..\external\jerryscript\jerry-port\win\jerry-port-win-fs.c" />
     <ClCompile Include="..\external\jerryscript\jerry-port\win\jerry-port-win-process.c" />
+    <ClCompile Include="..\external\lv_binding_jerryscript\src\lv_bindings.c" />
+    <ClCompile Include="..\external\lv_binding_jerryscript\src\lv_bindings_misc.c" />
     <ClCompile Include="LvglWindowsSimulator.cpp">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
     </ClCompile>

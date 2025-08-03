@@ -10,7 +10,7 @@
 #include "stdio.h"
 #include "appsys_native_func.h"
 #include "lv_bindings.h"
-#include "lv_bindings_special.h"
+#include "lv_bindings_misc.h"
 #include "appsys_port.h"
 
 // 全局状态记录是否已初始化 VM

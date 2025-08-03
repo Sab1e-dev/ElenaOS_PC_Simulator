@@ -102,13 +102,15 @@ echo Generating lv_bindings.c...
 echo ==============================
 cd /d "%CWD%"
 
-"!VIRTUAL_PYTHON_EXE!" -m pip install -r "%CWD%"\requirements.txt
+set LVBindingJerryscriptPath="%CWD%\external\lv_binding_jerryscript"
 
-"!VIRTUAL_PYTHON_EXE!" %CWD%\scripts\lv_binding_jerryscript\gen_lvgl_binding.py ^
- --json-path=%GenJSONPath%\output\lvgl.json ^
- --output-c-path=%CWD%\appsys\src\lv_bindings.c ^
+"!VIRTUAL_PYTHON_EXE!" -m pip install -r "%LVBindingJerryscriptPath%"\requirements.txt
+
+"!VIRTUAL_PYTHON_EXE!" %LVBindingJerryscriptPath%\gen_lvgl_binding.py ^
+ --json-file=%GenJSONPath%\output\lvgl.json ^
+ --output-c-path=%LVBindingJerryscriptPath%\src ^
  --extract-funcs-from=%CWD%\LvglWindowsSimulator\main.js ^
- --cfg-path=%CWD%\scripts\lv_binding_jerryscript\examples\ElenaOS_PC_Simulator
+ --cfg-path=%LVBindingJerryscriptPath%\examples\ElenaOS_PC_Simulator
 
 :END
 endlocal
